@@ -1,9 +1,5 @@
 """
-Object-oriented model for morphologically split lemmas.
-
-Contains a general interface for any dataset format, and an
-implementation specific to CELEX/e-Lex; the morphSplit algorithm
-is more general though, and can be repurposed for e.g. Morpho Challenge datasets.
+Object-oriented model for compounding and derivation of lemmata.
 """
 from typing import Iterable
 from abc import ABC, abstractmethod
