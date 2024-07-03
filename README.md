@@ -8,3 +8,25 @@ As an example, the Dutch derivation `isometrisch` ("isometric") can be decompose
 
 *Morphological segmentation* is the task of isolating the substrings of a word that correspond to its morphemes. These substrings are called *morphs*.
 In the above example, the segmentation would be `iso/metr/ic`.
+
+## Installation
+Run
+```shell
+pip install "modest[github] @ git+https://github.com/bauwenst/MoDeST.git"
+```
+
+## Repo layout
+Currently, the repo looks as follows:
+```
+data/              ---> Datasets hosted specifically by MoDeST on GitHub. Will NOT be downloaded when you install the package.
+src/modest/        ---> All source code for the Python package that will be installed in your interpreter.
+    datasets/      ---> Per-language definitions of the classes users will interact with.
+    downloaders/   ---> Support code for pulling in remote data.
+    formats/       ---> Support code for interpreting file formats by specific authors/organisations.
+    interfaces/    ---> Declarations of the interfaces users will interact with.
+```
+
+Currently, every language has its own subpackage under `datasets/`. The assumption is that every language may have multiple
+datasets and that every dataset may need more than a single class definition to work (even if most of the support code should
+be under `formats/`). If this turns out not to be the case in the future, we might go from `datasets/{language}/{dataset}.py`
+to instead `datasets/{language}.py` for simplicity of imports.
