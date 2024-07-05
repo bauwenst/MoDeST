@@ -81,7 +81,7 @@ def iterateHandle(open_file_handle: TextIO, verbose=False):
             yield line.rstrip()
 
 
-def iterateTsv(tsv_path: Path, sep="\t", verbose=False) -> Iterable[Tuple[str, str]]:
+def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, verbose=False) -> Iterable[Tuple[str, ...]]:
     """
     Iterating over the words file is slightly trickier than you think due to 2 technicalities that are easy to forget:
         - You must strip the newline at the end;
@@ -94,8 +94,11 @@ def iterateTsv(tsv_path: Path, sep="\t", verbose=False) -> Iterable[Tuple[str, s
     with open(tsv_path, "r", encoding="utf-8") as handle:
         for stripped_line in iterateHandle(handle, verbose=verbose):
             parts = stripped_line.split(sep=sep)
-            if len(parts) > 1:
-                yield sep.join(parts[0:-1]), parts[-1]
+            if len(parts) >= n_parts:  # Enough parts to output something.
+                if n_parts == 1:
+                    yield (sep.join(parts),)
+                else:
+                    yield (sep.join(parts[:-n_parts+1]),) + tuple(parts[-n_parts+1:])
 
 
 def counterToTsv(counts: Counter, out_path: Path, sep="\t"):

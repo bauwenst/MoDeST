@@ -9,6 +9,13 @@ As an example, the Dutch derivation `isometrisch` ("isometric") can be decompose
 *Morphological segmentation* is the task of isolating the substrings of a word that correspond to its morphemes. These substrings are called *morphs*.
 In the above example, the segmentation would be `iso/metr/ic`.
 
+## Languages and Datasets
+The supported languages are simply under `modest.datasets`, so the list will not be reproduced here.
+The list of datasets roughly coincides with the downloaders under `modest.downloaders`. Currently, the package supports:
+- CELEX
+- MorphyNet
+- MorphoChallenge2010
+
 ## Installation
 Run
 ```shell
@@ -26,7 +33,8 @@ src/modest/        ---> All source code for the Python package that will be inst
     interfaces/    ---> Declarations of the interfaces users will interact with.
 ```
 
-Currently, every language has its own subpackage under `datasets/`. The assumption is that every language may have multiple
-datasets and that every dataset may need more than a single class definition to work (even if most of the support code should
-be under `formats/`). If this turns out not to be the case in the future, we might go from `datasets/{language}/{dataset}.py`
-to instead `datasets/{language}.py` for simplicity of imports.
+Currently, every language has its own file under `datasets/`. The assumption is that the datasets pertaining to one language 
+are sufficiently encapsulated that this will not clutter the imports from such a file. If this turns out to become a
+problem later on, in the future we might go from `datasets/{language}.py`
+to instead `datasets/{language}/{dataset}.py` to ensure that autocompletion for the last `.` of the `import` suggests exactly the list of
+available datasets for that language.
