@@ -10,8 +10,8 @@ As an example, the Dutch derivation `isometrisch` ("isometric") can be decompose
 In the above example, the segmentation would be `iso/metr/ic`.
 
 ## Languages and Datasets
-The supported languages are simply under `modest.datasets`, so the list will not be reproduced here.
-The list of datasets roughly coincides with the downloaders under `modest.downloaders`. Currently, the package supports:
+The supported languages are simply under `modest.languages`, so the list will not be reproduced here.
+The list of datasets roughly coincides with the downloaders under `modest.datasets`. Currently, the package supports:
 - CELEX
 - MorphyNet
 - MorphoChallenge2010
@@ -27,14 +27,16 @@ Currently, the repo looks as follows:
 ```
 data/              ---> Datasets hosted specifically by MoDeST on GitHub. Will NOT be downloaded when you install the package.
 src/modest/        ---> All source code for the Python package that will be installed in your interpreter.
-    datasets/      ---> Per-language definitions of the classes users will interact with.
-    downloaders/   ---> Support code for pulling in remote data.
-    formats/       ---> Support code for interpreting file formats by specific authors/organisations.
+    languages/     ---> Per-language definitions of the classes users will interact with.
+    datasets/      ---> Support code for pulling in and reading remote data.
+    formats/       ---> Support code for turning tag formats into objects. (Tag formats are independent of how the tags are stored.)
     interfaces/    ---> Declarations of the interfaces users will interact with.
 ```
 
-Currently, every language has its own file under `datasets/`. The assumption is that the datasets pertaining to one language 
-are sufficiently encapsulated that this will not clutter the imports from such a file. If this turns out to become a
-problem later on, in the future we might go from `datasets/{language}.py`
-to instead `datasets/{language}/{dataset}.py` to ensure that autocompletion for the last `.` of the `import` suggests exactly the list of
-available datasets for that language.
+Currently, every language has its own file under `languages/`. The assumption is that the datasets pertaining to one language 
+are sufficiently encapsulated that this will not clutter the imports from such a file. There are two arguments in favour of
+going from `languages/{language}.py` to instead `languages/{language}/{dataset}.py`: 
+1. Autocompletion for the last `.` of the `import` suggests exactly the list of available datasets for that language;
+2. You do not have to have all the packages installed required to download/build all the datasets for a language if you 
+   only need one. (However, realistically, since MoDeST is for final datasets rather than making datasets, the code for pulling
+   them should not be that complicated.)
