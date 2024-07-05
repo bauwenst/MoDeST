@@ -1,5 +1,5 @@
 """
-Tools for TSVs that represent word-count pairs.
+Tools for TSVs, and particularly those that represent word-count pairs.
 """
 from typing import Iterable, TextIO, List, Tuple, Optional, Callable, Dict
 from collections import Counter
@@ -13,48 +13,6 @@ from tktkt.util.printing import *
 from tktkt.interfaces.preparation import Preprocessor
 
 from ..downloaders.paths import PathManagement
-
-
-def textIterableToTsv(line_iterable: Iterable[str], output_file: Path,
-                      cache_every: int=1_000_000, progress_bar_total: int=None):
-    """
-    Compresses the given string iterable to an output file, with the result
-    containing every unique word exactly once in the format
-        word1 count1
-        word2 count2
-        word3 count3
-        ...
-
-    Simplified from get_vocab() at https://github.com/rsennrich/subword-nmt/blob/master/subword_nmt/learn_bpe.py.
-    """
-    CACHE_FOLDER = PathManagement.makeTempFolder()
-    CACHE_FOLDER.mkdir(exist_ok=False)
-
-    total_counter = Counter()
-    caches = []
-    for idx,line in tqdm(enumerate(line_iterable), total=progress_bar_total, smoothing=0.05):
-        # Counting
-        for word in line.split():  # No strip needed: note that .strip() without arguments will delete ALL WHITESPACE (i.e. any sequence length of space, tab, newline, carriage...). Those newlines would break word files.
-            total_counter[word] += 1
-
-        # Caching
-        if (idx+1) % cache_every == 0:
-            cache_path = CACHE_FOLDER / f"{len(caches)+1}.txt"
-            counterToTsv(total_counter, cache_path)
-            caches.append(cache_path)
-            total_counter = Counter()
-
-    # For safety, cache the current incomplete counter
-    if total_counter:
-        cache_path = CACHE_FOLDER / f"{len(caches) + 1}.txt"
-        counterToTsv(total_counter, cache_path)
-        caches.append(cache_path)
-
-    # Merge and delete caches
-    mergeTsvs(caches, output_file, delete_afterwards=True, trim_hapax_every=5)
-    CACHE_FOLDER.rmdir()
-
-    return output_file
 
 
 def iterateHandle(open_file_handle: TextIO, verbose=False):
@@ -99,6 +57,49 @@ def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, verbose=False) -> Itera
                     yield (sep.join(parts),)
                 else:
                     yield (sep.join(parts[:-n_parts+1]),) + tuple(parts[-n_parts+1:])
+
+#################################################################################################################
+
+def textIterableToTsv(line_iterable: Iterable[str], output_file: Path,
+                      cache_every: int=1_000_000, progress_bar_total: int=None):
+    """
+    Compresses the given string iterable to an output file, with the result
+    containing every unique word exactly once in the format
+        word1 count1
+        word2 count2
+        word3 count3
+        ...
+
+    Simplified from get_vocab() at https://github.com/rsennrich/subword-nmt/blob/master/subword_nmt/learn_bpe.py.
+    """
+    CACHE_FOLDER = PathManagement.makeTempFolder()
+    CACHE_FOLDER.mkdir(exist_ok=False)
+
+    total_counter = Counter()
+    caches = []
+    for idx,line in tqdm(enumerate(line_iterable), total=progress_bar_total, smoothing=0.05):
+        # Counting
+        for word in line.split():  # No strip needed: note that .strip() without arguments will delete ALL WHITESPACE (i.e. any sequence length of space, tab, newline, carriage...). Those newlines would break word files.
+            total_counter[word] += 1
+
+        # Caching
+        if (idx+1) % cache_every == 0:
+            cache_path = CACHE_FOLDER / f"{len(caches)+1}.txt"
+            counterToTsv(total_counter, cache_path)
+            caches.append(cache_path)
+            total_counter = Counter()
+
+    # For safety, cache the current incomplete counter
+    if total_counter:
+        cache_path = CACHE_FOLDER / f"{len(caches) + 1}.txt"
+        counterToTsv(total_counter, cache_path)
+        caches.append(cache_path)
+
+    # Merge and delete caches
+    mergeTsvs(caches, output_file, delete_afterwards=True, trim_hapax_every=5)
+    CACHE_FOLDER.rmdir()
+
+    return output_file
 
 
 def counterToTsv(counts: Counter, out_path: Path, sep="\t"):
