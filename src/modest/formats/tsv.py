@@ -1,7 +1,7 @@
 """
 Tools for TSVs, and particularly those that represent word-count pairs.
 """
-from typing import Iterable, TextIO, List, Tuple, Optional, Callable, Dict
+from typing import TextIO, Tuple, Optional, Callable, Dict
 from collections import Counter
 from pathlib import Path
 
@@ -12,7 +12,7 @@ from tktkt.util.timing import *
 from tktkt.util.printing import *
 from tktkt.interfaces.preparation import Preprocessor
 
-from ..downloaders.paths import PathManagement
+from modest.paths import PathManagement
 
 
 def iterateHandle(open_file_handle: TextIO, verbose=False):

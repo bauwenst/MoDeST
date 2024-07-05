@@ -2,8 +2,7 @@
 TODO: You can do a lot of caching at construction. No need to generate the morphemeSplit if you
       know the list of morphemes beforehand.
 """
-from typing import Iterable, List, Tuple
-from pathlib import Path
+from typing import List, Tuple
 from dataclasses import dataclass
 
 import re
@@ -11,7 +10,6 @@ from tktkt.util.printing import PrintTable, warn
 
 DO_WARNINGS = False
 
-from ..formats.tsv import iterateHandle
 from ..interfaces.morphologies import WordDecompositionWithFreeSegmentation
 from ..algorithms.alignment import alignMorphemes_Viterbi
 
@@ -199,7 +197,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
             beziens waardigheid	((((be)[V|.V],(zie)[V])[V],(s)[A|V.A],((waarde)[N],(ig)[A|N.])[A])[A],(heid)[N|A.])[N]
             levens verzekerings overeenkomst (((leven)[N],(s)[N|N.N],(((ver)[V|.A],(zeker)[A])[V],(ing)[N|V.])[N])[N],(s)[N|N.N],(((overeen)[B],(kom)[V])[V],(st)[N|V.])[N])[N]
         """
-        return self._lexemeSplit().replace("  ", " ").replace("  ", " ").strip()
+        return tuple(self._lexemeSplit().replace("  ", " ").replace("  ", " ").strip().split(" "))
 
     def _lexemeSplit(self) -> str:
         """
@@ -272,50 +270,5 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
         Note that this means that the output of this method cannot be aligned with the morpheme list, because there is
         no morpheme for the hyphen. See _morphSplit() for the raw, alignable split.
         """
-        split, _ = alignMorphemes_Viterbi(self.morphtext, self.morphemeSplit().split(" "))
-        return split.replace("- ", " - ")
-
-
-#########################################################################################################
-
-
-from typing import Iterable
-from pathlib import Path
-import langcodes
-
-from .tsv import iterateHandle
-from ..interfaces.datasets import ModestDataset
-from ..downloaders.webcelex import WebCelexDownloader
-
-
-class CelexDataset(ModestDataset):
-
-    def __init__(self, language: langcodes.Language):
-        self.language = language
-
-    def _load(self) -> Path:
-        dl = WebCelexDownloader()
-        return dl.get(language=self.language)
-
-    def _generator(self, file: Path, verbose=True, legacy=False) -> Iterable[CelexLemmaMorphology]:
-        # FIXME: This is probably a parser for MY specific format for CELEX, but this might not be how you download it
-        #        from WebCelex.
-        with open(file, "r", encoding="utf-8") as handle:
-            for line in iterateHandle(handle, verbose=verbose):
-                lemma, morphological_tag = line.split("\t")
-                try:
-                    if "[F]" not in morphological_tag and (legacy or "'" not in lemma):  # TODO: From what I can guess (there is no manual for CELEX tags!), the [F] tag is used to indicate participles (past and present), which are treated as a single morpheme even though they clearly are not. For some, you can deduce the decomposition by re-using the verb's decomposition, so you could write some kind of a dataset sanitiser for that.
-                        yield CelexLemmaMorphology(lemma=lemma, celex_struclab=morphological_tag)
-                except:
-                    print(f"Failed to parse morphology: '{lemma}' tagged as '{morphological_tag}'")
-
-    def cleanFile(self, file: Path):
-        """
-        Removes lines that do not conform to the {spaceless string}\t{spaceless string} format.
-        """
-        with open(file.with_stem(file.stem + "_proper"), "w", encoding="utf-8") as out_handle:
-            with open(file, "r", encoding="utf-8") as in_handle:
-                for line in iterateHandle(in_handle):
-                    parts = line.split("\t")
-                    if len(parts) == 2 and " " not in line:
-                        out_handle.write(line + "\n")
+        split, _ = alignMorphemes_Viterbi(self.morphtext, self.decompose())
+        return tuple(split.replace("- ", " - ").split(" "))

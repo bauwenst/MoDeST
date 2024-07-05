@@ -1,5 +1,4 @@
-from typing import Tuple, Iterable
-import langcodes
+from typing import Tuple
 
 from ..algorithms.alignment import alignMorphemes_Viterbi
 from ..interfaces.morphologies import WordDecompositionWithLexicalForm, WordDecomposition
@@ -44,38 +43,7 @@ class MorphyNetDerivation(WordDecomposition):
         words. (E.g.: Wiederverwendbarkeit is in German MorphyNet derivations but
         not inflections.)
         """
-        super().__init__(
-            word=word
-        )
-
-        ########################################
-        # Old implementation: flawed because it tried to do alignment by itself and couldn't support character edits.
-        # try:  # Either it's at the start or at the end.
-        #     if prefix_not_suffix:
-        #         assert affix.casefold() == surface_form[:len(affix)].casefold()
-        #         split_at_index  = len(affix)
-        #         replace_by_base = 1
-        #     else:
-        #         assert affix.casefold() == surface_form[-len(affix):].casefold()
-        #         split_at_index  = len(surface_form) - len(affix)
-        #         replace_by_base = 0
-        #     self.morphs = [surface_form[:split_at_index], surface_form[split_at_index:]]
-        # except:  # It might be somewhere in the middle.
-        #     replace_by_base = 0
-        #     try:   # Immediately after the base.
-        #         assert base.casefold() == surface_form[:len(base)].casefold() and affix.casefold() == surface_form[len(base):len(base)+len(affix)].casefold()
-        #         split_at_index = len(base)
-        #     except:
-        #         try:  # Is the affix SOMEWHERE?
-        #             split_at_index = surface_form.index(affix)
-        #             assert affix.casefold() == surface_form[split_at_index:split_at_index+len(affix)].casefold()
-        #         except:
-        #             raise RuntimeError(f"Discarded surface form because the affix was weird: '{surface_form}' apparently contains '{affix}'.")
-        #     self.morphs = [surface_form[:split_at_index], surface_form[split_at_index:split_at_index+len(affix)], surface_form[split_at_index+len(affix):]]
-        # self.morphemes = list(self.morphs)
-        # self.morphemes[replace_by_base] = base
-        # self.surface = surface_form
-        ########################################
+        super().__init__(word=word)
 
         if base[0] == "-":
             base = base[1:]
@@ -109,57 +77,3 @@ class MorphyNetDerivation(WordDecomposition):
 
     def segment(self) -> Tuple[str, ...]:
         return self.morphs
-
-
-#######################################################################################
-
-
-from pathlib import Path
-
-from .tsv import iterateTsv
-from ..downloaders.morphynet import MorphynetDownloader, MorphynetSubset
-from ..interfaces.datasets import ModestDataset
-
-
-class MorphyNetDataset_Inflection(ModestDataset):
-
-    def __init__(self, language: langcodes.Language):
-        self.language = language
-
-    def _load(self) -> Path:
-        dl = MorphynetDownloader()
-        return dl.get(language=self.language, subset=MorphynetSubset.INFLECTIONAL)
-
-    def _generate(self, file: Path) -> Iterable[MorphyNetInflection]:
-        for parts in iterateTsv(file):
-            lemma, word, tag, decomposition = parts
-            yield MorphyNetInflection(
-                word=word,
-                raw_morpheme_sequence=decomposition,
-                lemma=lemma,
-                lexical_tag=tag
-            )
-
-
-class MorphyNetDataset_Derivation(ModestDataset):
-
-    def __init__(self, language: langcodes.Language):
-        self.language = language
-
-    def _load(self) -> Path:
-        dl = MorphynetDownloader()
-        return dl.get(language=self.language, subset=MorphynetSubset.DERIVATIONAL)
-
-    def _generate(self, path: Path) -> Iterable[MorphyNetDerivation]:
-        for parts in iterateTsv(path):
-            original, result, original_pos, result_pos, affix, affix_type = parts
-            try:
-                yield MorphyNetDerivation(
-                    word=result,
-                    base=original,
-                    affix=affix,
-                    prefix_not_suffix=(affix_type == "prefix")
-                )
-            except:
-                print("Unparsable MorphyNet derivation:", parts)
-                pass

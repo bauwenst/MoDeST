@@ -1,7 +1,7 @@
 import langcodes
 
 # MorphyNet
-from ..formats.morphynet import MorphyNetDataset_Derivation, MorphyNetDataset_Inflection
+from ..datasets.morphynet import MorphyNetDataset_Derivation, MorphyNetDataset_Inflection
 
 
 # For MorphyNet, we have language-agnostic dataset loaders, hence we need very little code to build the English dataset.

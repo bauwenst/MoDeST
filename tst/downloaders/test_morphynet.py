@@ -1,7 +1,7 @@
 import langcodes
 
 from modest.algorithms.alignment import alignMorphemes_Viterbi
-from modest.downloaders.morphynet import MorphynetDownloader, MorphynetSubset
+from modest.datasets.morphynet import MorphynetDownloader, MorphynetSubset
 from modest.formats.morphynet import MorphyNetDerivation
 from modest.formats.tsv import iterateTsv
 

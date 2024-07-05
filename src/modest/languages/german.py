@@ -1,7 +1,7 @@
 import langcodes
 
 # MorphyNet
-from ..formats.morphynet import MorphyNetDataset_Derivation, MorphyNetDataset_Inflection
+from ..datasets.morphynet import MorphyNetDataset_Derivation, MorphyNetDataset_Inflection
 
 
 class German_MorphyNet_Derivations(MorphyNetDataset_Derivation):

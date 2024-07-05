@@ -6,11 +6,16 @@ URLs for MorphyNet have the following format:
 """
 from enum import Enum
 from pathlib import Path
+from typing import Iterable
 
 import langcodes
 import requests
 
-from .paths import PathManagement
+from modest.paths import PathManagement
+from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
+from ..formats.tsv import iterateTsv
+from ..interfaces.datasets import ModestDataset
+
 
 MORPHYNET_LANGUAGES = {
     langcodes.find("Catalan"): "cat",
@@ -44,14 +49,22 @@ class MorphynetSubset(Enum):
             raise ValueError("Enum value has no string representation:", self)
 
 
-class MorphynetDownloader:
+class MorphyNetDataset(ModestDataset):
+    """
+    Has two subsets (inflectional and derivational) which can share their download code but
+    need different generator code.
+    """
 
-    def get(self, language: langcodes.Language, subset: MorphynetSubset) -> Path:
-        morphynet_code = MORPHYNET_LANGUAGES.get(language)
+    def __init__(self, language: langcodes.Language, subset: MorphynetSubset):
+        self.language = language
+        self.subset   = subset
+
+    def _get(self) -> Path:
+        morphynet_code = MORPHYNET_LANGUAGES.get(self.language)
         if morphynet_code is None:
-            raise ValueError(f"Language not in MorphyNet: {language}")
+            raise ValueError(f"Language not in MorphyNet: {self.language}")
 
-        cache_path = PathManagement.datasetCache(language, "MorphyNet") / f"{morphynet_code}.{subset.toString()}.v1.tsv"
+        cache_path = PathManagement.datasetCache(self.language, "MorphyNet") / f"{morphynet_code}.{self.subset.toString()}.v1.tsv"
         if not cache_path.exists():
             url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{cache_path.name}"
             response = requests.get(url)
@@ -59,3 +72,39 @@ class MorphynetDownloader:
                 handle.write(response.content)
 
         return cache_path
+
+
+class MorphyNetDataset_Inflection(MorphyNetDataset):
+
+    def __init__(self, language: langcodes.Language):
+        super().__init__(language=language, subset=MorphynetSubset.INFLECTIONAL)
+
+    def _generate(self, file: Path) -> Iterable[MorphyNetInflection]:
+        for parts in iterateTsv(file):
+            lemma, word, tag, decomposition = parts
+            yield MorphyNetInflection(
+                word=word,
+                raw_morpheme_sequence=decomposition,
+                lemma=lemma,
+                lexical_tag=tag
+            )
+
+
+class MorphyNetDataset_Derivation(MorphyNetDataset):
+
+    def __init__(self, language: langcodes.Language):
+        super().__init__(language=language, subset=MorphynetSubset.DERIVATIONAL)
+
+    def _generate(self, path: Path) -> Iterable[MorphyNetDerivation]:
+        for parts in iterateTsv(path):
+            original, result, original_pos, result_pos, affix, affix_type = parts
+            try:
+                yield MorphyNetDerivation(
+                    word=result,
+                    base=original,
+                    affix=affix,
+                    prefix_not_suffix=(affix_type == "prefix")
+                )
+            except:
+                print("Unparsable MorphyNet derivation:", parts)
+                pass
