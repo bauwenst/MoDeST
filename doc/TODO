@@ -1,4 +1,6 @@
-- Add the following datasets:
-    - LADEC: https://era.library.ualberta.ca/items/dc3b9033-14d0-48d7-b6fa-6398a30e61e4
-    - MorphoLex: https://github.com/hugomailhot/MorphoLex-en/blob/master/MorphoLEX_en.xlsx
-    - DagoBERT: https://cistern.cis.lmu.de/dagobert/
+TODO:
+    - Add the following datasets:
+        - LADEC: https://era.library.ualberta.ca/items/dc3b9033-14d0-48d7-b6fa-6398a30e61e4
+        - MorphoLex: https://github.com/hugomailhot/MorphoLex-en/blob/master/MorphoLEX_en.xlsx
+        - DagoBERT: https://cistern.cis.lmu.de/dagobert/
+    - CELEX probably needs some reduction of duplicates that only differ in PoS tags but show the same exact segmentations.

@@ -4,6 +4,7 @@ For downloading files from the HuggingFace hub.
 import datasets
 import langcodes
 from pathlib import Path
+from typing import Iterable
 
 from ..formats.trivial import TrivialDecomposition
 from ..interfaces.datasets import ModestDataset
@@ -11,7 +12,7 @@ from ..paths import PathManagement
 from ..formats.tsv import iterateTsv
 
 
-class CompoundPieceDataset(ModestDataset):
+class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
 
     LANGCODES = {
         langcodes.find("Afrikaans"): "af",
@@ -73,14 +74,14 @@ class CompoundPieceDataset(ModestDataset):
     }
 
     def __init__(self, language: langcodes.Language):
-        self.language = language
+        super().__init__(name="CompoundPiece", language=language)
 
     def _get(self) -> Path:
-        langcode = CompoundPieceDataset.LANGCODES.get(self.language)
+        langcode = CompoundPieceDataset.LANGCODES.get(self._language)
         if langcode is None:
-            raise ValueError(f"Unknown language: {self.language}")
+            raise ValueError(f"Unknown language: {self._language}")
 
-        cache = PathManagement.datasetCache(self.language, "CompoundPiece") / f"{langcode}.S1-S2.tsv"
+        cache = self._getCachePath() / f"{langcode}.S1-S2.tsv"
         if not cache.exists():
             data = datasets.load_dataset("benjamin/compoundpiece", "wiktionary")["train"]
             with open(cache, "w", encoding="utf-8") as handle:
@@ -89,7 +90,7 @@ class CompoundPieceDataset(ModestDataset):
 
         return cache
 
-    def _generate(self, path: Path):
+    def _generate(self, path: Path) -> Iterable[TrivialDecomposition]:
         for word, decomposition, segmentation in iterateTsv(path):
             yield TrivialDecomposition(
                 word=word,

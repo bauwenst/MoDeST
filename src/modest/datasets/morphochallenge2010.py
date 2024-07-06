@@ -17,17 +17,17 @@ MC_LANGUAGES = {
 }
 
 
-class MorphoChallenge2010Dataset(ModestDataset):
+class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
 
     def __init__(self, language: langcodes.Language):
-        self.language = language
+        super().__init__(name="MC2010", language=language)
 
     def _get(self) -> Path:
-        code = MC_LANGUAGES.get(self.language)
+        code = MC_LANGUAGES.get(self._language)
         if code is None:
-            raise ValueError(f"Unknown language: {self.language}")
+            raise ValueError(f"Unknown language: {self._language}")
 
-        cache = PathManagement.datasetCache(language=self.language, dataset_name="MC2010") / f"{code}.segmentation.train.tsv"
+        cache = self._getCachePath() / f"{code}.segmentation.train.tsv"
         if not cache.exists():
             url = f"http://morpho.aalto.fi/events/morphochallenge2010/data/goldstd_trainset.segmentation.{code}"
             response = requests.get(url)
@@ -37,7 +37,7 @@ class MorphoChallenge2010Dataset(ModestDataset):
         return cache
 
     def _generate(self, path: Path) -> Iterable[MorphoChallenge2010Morphology]:
-        is_turkish = (self.language == langcodes.find("Turkish"))
+        is_turkish = (self._language == langcodes.find("Turkish"))
 
         with open(path, "r", encoding="windows-1252") as handle:
             for line in iterateHandle(handle):

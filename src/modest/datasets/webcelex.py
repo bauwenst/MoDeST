@@ -18,7 +18,7 @@ import time
 import bs4
 
 from ..formats.celex import CelexLemmaMorphology
-from ..formats.tsv import iterateHandle
+from ..formats.tsv import iterateHandle, iterateTsv
 from ..interfaces.datasets import ModestDataset
 from ..paths import PathManagement
 
@@ -30,18 +30,20 @@ CELEX_LANGUAGES = {
 }
 
 
-class CelexDataset(ModestDataset):
+class CelexDataset(ModestDataset[CelexLemmaMorphology]):
 
     def __init__(self, language: langcodes.Language):
-        self.language = language
+        super().__init__(name="CELEX", language=language)
 
     def _get(self) -> Path:
-        full_name = CELEX_LANGUAGES.get(self.language)
+        full_name = CELEX_LANGUAGES.get(self._language)
         if full_name is None:
-            raise ValueError(f"Unknown language: {self.language}")
+            raise ValueError(f"Unknown language: {self._language}")
 
-        cache_path = PathManagement.datasetCache(language=self.language, dataset_name="CELEX") / (f"{self.language.to_tag()}.struclab.tsv")
+        cache_path = self._getCachePath() / (f"{self._language.to_tag()}.struclab.tsv")
         if not cache_path.exists():
+            print("Simulating browser to download CELEX dataset (takes under 60 seconds)...")
+
             chrome_options = Options()
             chrome_options.headless = True
             # chrome_options.add_experimental_option("detach", True)  # Add this if you want the browser to stay open after the experiment is done.
@@ -86,6 +88,7 @@ class CelexDataset(ModestDataset):
                     tag = word.find_next("td")
                     if tag.text:
                         out_handle.write(word.text + "\t" + tag.text + "\n")
+            print("Successfully downloaded CELEX.")
 
         return cache_path
 
@@ -100,14 +103,16 @@ class CelexDataset(ModestDataset):
                     if len(parts) == 2 and " " not in line:
                         out_handle.write(line + "\n")
 
-    def _generator(self, file: Path, verbose=True, legacy=False) -> Iterable[CelexLemmaMorphology]:
-        # FIXME: This is probably a parser for MY specific format for CELEX, but this might not be how you download it
-        #        from WebCelex.
-        with open(file, "r", encoding="utf-8") as handle:
-            for line in iterateHandle(handle, verbose=verbose):
-                lemma, morphological_tag = line.split("\t")
-                try:
-                    if "[F]" not in morphological_tag and (legacy or "'" not in lemma):  # TODO: From what I can guess (there is no manual for CELEX tags!), the [F] tag is used to indicate participles (past and present), which are treated as a single morpheme even though they clearly are not. For some, you can deduce the decomposition by re-using the verb's decomposition, so you could write some kind of a dataset sanitiser for that.
-                        yield CelexLemmaMorphology(lemma=lemma, celex_struclab=morphological_tag)
-                except:
-                    print(f"Failed to parse morphology: '{lemma}' tagged as '{morphological_tag}'")
+    def _generate(self, path: Path, legacy=False) -> Iterable[CelexLemmaMorphology]:
+        """
+        TODO: From what I can guess (there is no manual for CELEX tags!), the [F] tag is used to indicate participles
+              (past and present), which are treated as a single morpheme even though they clearly are not. For some,
+              you can deduce the decomposition by re-using the verb's decomposition, so you could write some kind of
+              a dataset sanitiser for that.
+        """
+        for word, tag in iterateTsv(path):
+            try:
+                if "[F]" not in tag and (legacy or "'" not in word):
+                    yield CelexLemmaMorphology(lemma=word, celex_struclab=tag)
+            except:
+                print(f"Failed to parse morphology: '{word}' tagged as '{tag}'")

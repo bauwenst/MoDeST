@@ -14,7 +14,7 @@ import requests
 from modest.paths import PathManagement
 from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
 from ..formats.tsv import iterateTsv
-from ..interfaces.datasets import ModestDataset
+from ..interfaces.datasets import ModestDataset, M
 
 
 MORPHYNET_LANGUAGES = {
@@ -49,22 +49,22 @@ class MorphynetSubset(Enum):
             raise ValueError("Enum value has no string representation:", self)
 
 
-class MorphyNetDataset(ModestDataset):
+class MorphyNetDataset(ModestDataset[M]):
     """
     Has two subsets (inflectional and derivational) which can share their download code but
     need different generator code.
     """
 
     def __init__(self, language: langcodes.Language, subset: MorphynetSubset):
-        self.language = language
-        self.subset   = subset
+        super().__init__(name="MorphyNet", language=language)
+        self._subset = subset
 
     def _get(self) -> Path:
-        morphynet_code = MORPHYNET_LANGUAGES.get(self.language)
+        morphynet_code = MORPHYNET_LANGUAGES.get(self._language)
         if morphynet_code is None:
-            raise ValueError(f"Language not in MorphyNet: {self.language}")
+            raise ValueError(f"Language not in MorphyNet: {self._language}")
 
-        cache_path = PathManagement.datasetCache(self.language, "MorphyNet") / f"{morphynet_code}.{self.subset.toString()}.v1.tsv"
+        cache_path = self._getCachePath() / f"{morphynet_code}.{self._subset.toString()}.v1.tsv"
         if not cache_path.exists():
             url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{cache_path.name}"
             response = requests.get(url)
@@ -74,7 +74,7 @@ class MorphyNetDataset(ModestDataset):
         return cache_path
 
 
-class MorphyNetDataset_Inflection(MorphyNetDataset):
+class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
     def __init__(self, language: langcodes.Language):
         super().__init__(language=language, subset=MorphynetSubset.INFLECTIONAL)
@@ -90,7 +90,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset):
             )
 
 
-class MorphyNetDataset_Derivation(MorphyNetDataset):
+class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
 
     def __init__(self, language: langcodes.Language):
         super().__init__(language=language, subset=MorphynetSubset.DERIVATIONAL)
