@@ -1,0 +1,4 @@
+- Add the following datasets:
+    - LADEC: https://era.library.ualberta.ca/items/dc3b9033-14d0-48d7-b6fa-6398a30e61e4
+    - MorphoLex: https://github.com/hugomailhot/MorphoLex-en/blob/master/MorphoLEX_en.xlsx
+    - DagoBERT: https://cistern.cis.lmu.de/dagobert/
