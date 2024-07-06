@@ -1,7 +1,7 @@
 from pathlib import Path
 import langcodes
 import requests
-from typing import Iterable
+from typing import Iterable, Generic
 
 from modest.paths import PathManagement
 from ..interfaces.datasets import ModestDataset
@@ -25,7 +25,7 @@ class MorphoChallenge2010Dataset(ModestDataset):
     def _get(self) -> Path:
         code = MC_LANGUAGES.get(self.language)
         if code is None:
-            raise ValueError("Unknown language:", self.language)
+            raise ValueError(f"Unknown language: {self.language}")
 
         cache = PathManagement.datasetCache(language=self.language, dataset_name="MC2010") / f"{code}.segmentation.train.tsv"
         if not cache.exists():

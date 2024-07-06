@@ -1,9 +1,12 @@
-from typing import Iterable
+from typing import Iterable, TypeVar, Generic
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 
-class ModestDataset(ABC):
+M = TypeVar("M")
+
+
+class ModestDataset(ABC, Generic[M]):
     """
     Responsible for
         1. Knowing how to talk to the external source that carries the data;
@@ -18,11 +21,11 @@ class ModestDataset(ABC):
         pass
 
     @abstractmethod
-    def _generate(self, path: Path) -> Iterable:
+    def _generate(self, path: Path) -> Iterable[M]:
         """
         Read the given file and generate morphological objects.
         """
         pass
 
-    def generate(self) -> Iterable:
+    def generate(self) -> Iterable[M]:
         yield from self._generate(self._get())

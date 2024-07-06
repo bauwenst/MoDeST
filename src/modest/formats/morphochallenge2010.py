@@ -16,17 +16,35 @@ class MorphoChallenge2010Morphology(WordDecomposition):
 
         self.morph_sequences    = []
         self.morpheme_sequences = []
+        self.tag_sequences      = []
 
         for structure in segmentation_tag.split(","):
             morphs = []
             morphemes = []
+            tags = []
             for mm in structure.strip().split(" "):
                 morph, morpheme = mm.split(":")
-                morphs.append(morph)
-                morphemes.append(morpheme)  # TODO: Possibly have to call       morpheme, tag = morpheme.split("_")
+
+                # Morph
+                if morph != "~":
+                    morphs.append(morph)
+
+                # Morpheme
+                if morpheme == "~":
+                    morpheme, tag = "-", ""
+                elif "_" in morpheme:
+                    underscore_separated = morpheme.split("_")
+                    morpheme, tag = "_".join(underscore_separated[:-1]), underscore_separated[-1]
+                else:
+                    morpheme, tag = "", morpheme
+
+                if morpheme != "":  # Not sure if it makes sense to leave out empty morphemes, since the tags will no longer be alignable.
+                    morphemes.append(morpheme)
+                tags.append(tag)
 
             self.morph_sequences.append(morphs)
             self.morpheme_sequences.append(morphemes)
+            self.tag_sequences.append(tags)
 
     def segment(self) -> Tuple[str, ...]:
         return tuple(self.morph_sequences[0])
