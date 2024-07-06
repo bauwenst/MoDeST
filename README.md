@@ -1,3 +1,5 @@
+<img src="doc/logo.png">
+
 # MoDeST: a Morphological Decomposition &amp; Segmentation Trove
 The point of MoDeST is two-fold:
 1. Provide a general object-oriented Python interface to access morphological decompositions and segmentations;
@@ -15,6 +17,7 @@ The list of datasets roughly coincides with the downloaders under `modest.datase
 - CELEX
 - MorphyNet
 - MorphoChallenge2010
+- CompoundPiece
 
 ## Installation
 Run
