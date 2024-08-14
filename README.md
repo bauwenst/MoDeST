@@ -25,6 +25,15 @@ Run
 pip install "modest[github] @ git+https://github.com/bauwenst/MoDeST.git"
 ```
 
+## Example
+Yes, it really is this easy, with full type checking and autocompletion by your IDE:
+```python
+from modest.languages.english import English_Celex, English_MorphoChallenge2010, English_MorphyNet_Inflections
+
+for item in English_Celex().generate():
+    print(item.word, "should be segmented as", item.segment(), "which derives from", item.decompose())
+```
+
 ## Repo layout
 Currently, the repo looks as follows:
 ```
