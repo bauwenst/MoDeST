@@ -79,7 +79,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
     def __init__(self, language: langcodes.Language):
         super().__init__(language=language, subset=MorphynetSubset.INFLECTIONAL)
 
-    def _generate(self, file: Path) -> Iterable[MorphyNetInflection]:
+    def _generate(self, path: Path, **kwargs) -> Iterable[MorphyNetInflection]:
         for parts in iterateTsv(file):
             lemma, word, tag, decomposition = parts
             yield MorphyNetInflection(
@@ -95,7 +95,7 @@ class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
     def __init__(self, language: langcodes.Language):
         super().__init__(language=language, subset=MorphynetSubset.DERIVATIONAL)
 
-    def _generate(self, path: Path) -> Iterable[MorphyNetDerivation]:
+    def _generate(self, path: Path, **kwargs) -> Iterable[MorphyNetDerivation]:
         for parts in iterateTsv(path):
             original, result, original_pos, result_pos, affix, affix_type = parts
             try:

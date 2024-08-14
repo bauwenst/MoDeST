@@ -103,14 +103,16 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
                     if len(parts) == 2 and " " not in line:
                         out_handle.write(line + "\n")
 
-    def _generate(self, path: Path, legacy=False) -> Iterable[CelexLemmaMorphology]:
+    def _generate(self, path: Path, **kwargs) -> Iterable[CelexLemmaMorphology]:
         """
         TODO: From what I can guess (there is no manual for CELEX tags!), the [F] tag is used to indicate participles
               (past and present), which are treated as a single morpheme even though they clearly are not. For some,
               you can deduce the decomposition by re-using the verb's decomposition, so you could write some kind of
               a dataset sanitiser for that.
         """
-        for word, tag in iterateTsv(path):
+        verbose = kwargs.get("verbose", False)
+        legacy  = kwargs.get("legacy", False)
+        for word, tag in iterateTsv(path, verbose=verbose):
             try:
                 if "[F]" not in tag and (legacy or "'" not in word):
                     yield CelexLemmaMorphology(lemma=word, celex_struclab=tag)

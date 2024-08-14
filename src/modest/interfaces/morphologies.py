@@ -94,7 +94,7 @@ class WordDecompositionWithFreeSegmentation(WordDecomposition):
     """
     CELEX is an example of this.
 
-    Note that a "free-morpheme decomposition" also exists, see Hofmann's CompoundPiece dataset.
+    Note that a "free-morpheme decomposition" also exists, see Minixhofer's CompoundPiece dataset.
     """
 
     @abstractmethod

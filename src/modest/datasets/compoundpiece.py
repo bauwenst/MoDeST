@@ -90,7 +90,7 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
 
         return cache
 
-    def _generate(self, path: Path) -> Iterable[TrivialDecomposition]:
+    def _generate(self, path: Path, **kwargs) -> Iterable[TrivialDecomposition]:
         for word, decomposition, segmentation in iterateTsv(path):
             yield TrivialDecomposition(
                 word=word,

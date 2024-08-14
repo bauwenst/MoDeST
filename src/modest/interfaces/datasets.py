@@ -39,7 +39,7 @@ class ModestDataset(ABC, Generic[M]):
         pass
 
     @abstractmethod
-    def _generate(self, path: Path) -> Iterable[M]:
+    def _generate(self, path: Path, **kwargs) -> Iterable[M]:
         """
         Read the given file and generate morphological objects.
         """
@@ -48,8 +48,8 @@ class ModestDataset(ABC, Generic[M]):
     def _getCachePath(self) -> Path:
         return PathManagement.datasetCache(language=self._language, dataset_name=self._name)
 
-    def generate(self) -> Iterable[M]:
-        yield from self._generate(self._get())
+    def generate(self, **kwargs) -> Iterable[M]:
+        yield from self._generate(self._get(), **kwargs)
 
     def card(self) -> DatasetCard:
         return DatasetCard(name=self._name, language=self._language.language_name(), size=count(self.generate()))

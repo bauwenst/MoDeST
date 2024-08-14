@@ -36,7 +36,7 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
 
         return cache
 
-    def _generate(self, path: Path) -> Iterable[MorphoChallenge2010Morphology]:
+    def _generate(self, path: Path, **kwargs) -> Iterable[MorphoChallenge2010Morphology]:
         is_turkish = (self._language == langcodes.find("Turkish"))
 
         with open(path, "r", encoding="windows-1252") as handle:

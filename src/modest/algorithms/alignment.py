@@ -11,7 +11,7 @@ class ViterbiNode:
     backpointer: Tuple[int, int] = None
 
 
-def alignMorphemes_Greedy(word: str, morphemes: str) -> str:
+def alignMorphemes_Greedy(word: str, morphemes: Iterable[str]) -> str:
     """
     The greedy approach sometimes outputs the wrong split, namely when a morpheme's tail looks like the next morpheme.
     An example is "élégance -> ((elegant)[A],(nce)[N|A.])[N]", where the "n" in "élégance" supposedly does not come
@@ -31,11 +31,11 @@ def alignMorphemes_Greedy(word: str, morphemes: str) -> str:
         False negative: A BC C D  accidentally subsumes the first C of  A BCE C D  in the BC morpheme, and matches it with the second. This is clearly unintended.
     """
     matching_lemma     = normalizer.normalize_str(word).lower()
-    matching_morphemes = normalizer.normalize_str(morphemes).lower()
+    matching_morphemes = map(lambda m: normalizer.normalize_str(m).lower(), morphemes)
 
     result = ""
     big_cursor = 0
-    for part in matching_morphemes.split(" "):
+    for part in matching_morphemes:
         # Move until you get to the part; if it is nowhere, try again for the next part.
         big_cursor_cache = big_cursor
         try:
@@ -57,7 +57,7 @@ def alignMorphemes_Greedy(word: str, morphemes: str) -> str:
     return result
 
 
-def alignMorphemes_Viterbi(word: str, morphemes: Iterable[str]) -> Tuple[str, List[int]]:
+def alignMorphemes_Viterbi(word: str, morphemes: Iterable[str]) -> Tuple[str, List[int]]:  # TODO: Should be a list of strings, not just one string. String concatenation is more expensive than list appends.
     """
     Iterative Viterbi algorithm with the same optimal results as a recursive bruteforce, except the problem goes
     from completely intractable (several minutes, running out of memory) to trivial (0 seconds and a small table).
