@@ -19,8 +19,7 @@ import bs4
 
 from ..formats.celex import CelexLemmaMorphology
 from ..formats.tsv import iterateHandle, iterateTsv
-from ..interfaces.datasets import ModestDataset
-from ..paths import PathManagement
+from ..interfaces.datasets import ModestDataset, Languageish
 
 
 CELEX_LANGUAGES = {
@@ -32,7 +31,7 @@ CELEX_LANGUAGES = {
 
 class CelexDataset(ModestDataset[CelexLemmaMorphology]):
 
-    def __init__(self, language: langcodes.Language):
+    def __init__(self, language: Languageish):
         super().__init__(name="CELEX", language=language)
 
     def _get(self) -> Path:

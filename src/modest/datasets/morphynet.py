@@ -11,10 +11,9 @@ from typing import Iterable
 import langcodes
 import requests
 
-from modest.paths import PathManagement
 from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
 from ..formats.tsv import iterateTsv
-from ..interfaces.datasets import ModestDataset, M
+from ..interfaces.datasets import ModestDataset, M, Languageish
 
 
 MORPHYNET_LANGUAGES = {
@@ -55,7 +54,7 @@ class MorphyNetDataset(ModestDataset[M]):
     need different generator code.
     """
 
-    def __init__(self, language: langcodes.Language, subset: MorphynetSubset):
+    def __init__(self, language: Languageish, subset: MorphynetSubset):
         super().__init__(name="MorphyNet", language=language)
         self._subset = subset
 
@@ -76,11 +75,11 @@ class MorphyNetDataset(ModestDataset[M]):
 
 class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
-    def __init__(self, language: langcodes.Language):
+    def __init__(self, language: Languageish):
         super().__init__(language=language, subset=MorphynetSubset.INFLECTIONAL)
 
     def _generate(self, path: Path, **kwargs) -> Iterable[MorphyNetInflection]:
-        for parts in iterateTsv(file):
+        for parts in iterateTsv(path):
             lemma, word, tag, decomposition = parts
             yield MorphyNetInflection(
                 word=word,
@@ -92,7 +91,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
 class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
 
-    def __init__(self, language: langcodes.Language):
+    def __init__(self, language: Languageish):
         super().__init__(language=language, subset=MorphynetSubset.DERIVATIONAL)
 
     def _generate(self, path: Path, **kwargs) -> Iterable[MorphyNetDerivation]:

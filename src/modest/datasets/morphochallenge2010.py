@@ -1,10 +1,9 @@
 from pathlib import Path
 import langcodes
 import requests
-from typing import Iterable, Generic
+from typing import Iterable
 
-from modest.paths import PathManagement
-from ..interfaces.datasets import ModestDataset
+from ..interfaces.datasets import ModestDataset, Languageish
 from ..formats.tsv import iterateHandle
 from ..formats.morphochallenge2010 import MorphoChallenge2010Morphology
 
@@ -19,7 +18,7 @@ MC_LANGUAGES = {
 
 class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
 
-    def __init__(self, language: langcodes.Language):
+    def __init__(self, language: Languageish):
         super().__init__(name="MC2010", language=language)
 
     def _get(self) -> Path:

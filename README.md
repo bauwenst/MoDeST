@@ -22,7 +22,7 @@ The list of datasets roughly coincides with the downloaders under `modest.datase
 ## Installation
 Run
 ```shell
-pip install "modest[github] @ git+https://github.com/bauwenst/MoDeST.git"
+pip install "modest[github] @ git+https://github.com/bauwenst/MoDeST"
 ```
 
 ## Example

@@ -7,8 +7,7 @@ from pathlib import Path
 from typing import Iterable
 
 from ..formats.trivial import TrivialDecomposition
-from ..interfaces.datasets import ModestDataset
-from ..paths import PathManagement
+from ..interfaces.datasets import ModestDataset, Languageish
 from ..formats.tsv import iterateTsv
 
 
@@ -73,7 +72,7 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
         langcodes.find("Yoruba"): "yo"
     }
 
-    def __init__(self, language: langcodes.Language):
+    def __init__(self, language: Languageish):
         super().__init__(name="CompoundPiece", language=language)
 
     def _get(self) -> Path:

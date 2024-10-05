@@ -35,8 +35,8 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
                                 M ::= `(`M,M(,M)*`)`[T]
                            with T something like a PoS tag.
         :param lemma: flat word, e.g. "kolencentrale"
-        :param stems: alternative to the lemma, a list containing as its first element the
-                      substring in the parent lemma corresponding to this object *if* it has no children.
+        :param morph_stack: alternative to the lemma, a list containing as its first element the
+                            substring in the parent lemma corresponding to this object *if* it has no children.
         """
         if not lemma and not morph_stack:  # This is a very good sanity check that indicates many bugs with the splitter.
             raise ValueError("You can't construct a morphological split without either a lemma or a list of stems for the children to use.")
