@@ -115,5 +115,7 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
             try:
                 if "[F]" not in tag and (legacy or "'" not in word):
                     yield CelexLemmaMorphology(lemma=word, celex_struclab=tag)
+            except GeneratorExit:  # When a generator goes out of scope before being depleted, a method is called on it that still runs the next 'yield' but raises a GeneratorExit instead. You must not inhibit this exception.
+                raise GeneratorExit
             except:
                 print(f"Failed to parse morphology: '{word}' tagged as '{tag}'")
