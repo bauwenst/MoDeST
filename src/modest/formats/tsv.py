@@ -12,8 +12,6 @@ from tktkt.util.timing import *
 from tktkt.util.printing import *
 from tktkt.interfaces.preparation import Preprocessor
 
-from modest.paths import PathManagement
-
 
 def iterateHandle(open_file_handle: TextIO, verbose=False):
     """
@@ -72,6 +70,7 @@ def textIterableToTsv(line_iterable: Iterable[str], output_file: Path,
 
     Simplified from get_vocab() at https://github.com/rsennrich/subword-nmt/blob/master/subword_nmt/learn_bpe.py.
     """
+    from ..paths import PathManagement  # Importing here so that you don't have to deal with path creation for the simple functions in this file.
     CACHE_FOLDER = PathManagement.makeTempFolder()
     CACHE_FOLDER.mkdir(exist_ok=False)
 
@@ -210,6 +209,7 @@ def getSubsetOfAllCounts(tsv_path: Path, subset: Iterable[str], subset_name: str
     if tsv_path is None:  # Impossible to identify which cache file it would be.
         return None
 
+    from ..paths import PathManagement
     cache_path = PathManagement.namelessCache() / f"{tsv_path.stem} ⊗ {subset_name}.txt"  # Path depends on the two files it intersects, otherwise it would be used even if you switched languages.
     if not cache_path.exists():
         if not tsv_path.exists():  # Impossible to fill the cache.

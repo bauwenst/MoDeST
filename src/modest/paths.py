@@ -1,15 +1,13 @@
-import datasets  # Ensure that the user has installed this package and hence has a HF_HOME.
+from datasets.config import HF_DATASETS_CACHE  # Ensure that the user has installed this package and hence has a HF_HOME.
 
 from pathlib import Path
 from typing import List
 from langcodes import Language
 
-import os
 import time
 
-PATH_HFHOME = Path(os.environ["HF_HOME"])
-PATH_HFHOME_MODEST = PATH_HFHOME / "datasets" / "modest"
-PATH_HFHOME_MODEST.mkdir(parents=False, exist_ok=True)
+PATH_HFHOME_MODEST = HF_DATASETS_CACHE / "modest"
+PATH_HFHOME_MODEST.mkdir(parents=True, exist_ok=True)
 
 
 class PathManagement:
