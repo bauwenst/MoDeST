@@ -10,7 +10,6 @@ from tqdm.auto import tqdm
 
 from tktkt.util.timing import *
 from tktkt.util.printing import *
-from tktkt.interfaces.preparation import Preprocessor
 
 
 def iterateHandle(open_file_handle: TextIO, verbose=False):
@@ -170,35 +169,6 @@ def trimWordFile(tsv_path: Path, minimum: int) -> Path:
 
     print("Removed", removed, "words from the count file.")
     return new_path
-
-
-def wordfileToBpeCorpus(tsv_path: Path, preprocessor: Preprocessor=None) -> Iterable[str]:
-    """
-    Converts a file
-        apple 5
-        banana-pear 3
-        ...
-    to sentences
-        Ġapple Ġapple Ġapple Ġapple Ġapple
-        Ġbanana - pear Ġbanana - pear Ġbanana - pear
-
-    or, if pretokenisation is turned on (do NOT do this when using HuggingFace's ByteLevel pretokeniser already!),
-        apple apple apple apple apple
-        banana-pear banana-pear banana-pear
-    """
-    LARGEST_STRING_LEN  = 1_000
-
-    for word, count in iterateTsv(tsv_path):
-        if preprocessor is not None:
-            word = " ".join(preprocessor.do(word))
-
-        count = int(count)  # Note: you can't just multiply the string you want to return by this count, because you'll run into memory errors (kinda hard to reserve 400 million bytes of stack space).
-        max_at_once = max(1, LARGEST_STRING_LEN // (len(word)+1))
-        while count > 0:
-            new_count = max(0, count - max_at_once)
-            diff      = count - new_count
-            count -= diff
-            yield diff*(" " + word)
 
 
 def getSubsetOfAllCounts(tsv_path: Path, subset: Iterable[str], subset_name: str) -> Optional[Counter]:
