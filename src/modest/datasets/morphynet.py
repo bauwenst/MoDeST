@@ -65,12 +65,15 @@ class MorphyNetDataset(ModestDataset[M]):
 
         cache_path = self._getCachePath() / f"{morphynet_code}.{self._subset.toString()}.v1.tsv"
         if not cache_path.exists():
-            url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{cache_path.name}"
+            url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{self._getRemoteFilename(morphynet_code, self._subset)}"
             response = requests.get(url)
             with open(cache_path, "wb") as handle:
                 handle.write(response.content)
 
         return cache_path
+
+    def _getRemoteFilename(self, langcode: str, subset: MorphynetSubset) -> str:
+        return f"{langcode}.{subset.toString()}.v1.tsv"
 
 
 class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):

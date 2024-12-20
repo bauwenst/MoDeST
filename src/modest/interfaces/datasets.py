@@ -1,4 +1,4 @@
-from typing import Iterable, TypeVar, Generic, Union
+from typing import Iterable, Iterator, TypeVar, Generic, Union
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -44,7 +44,7 @@ class ModestDataset(ABC, Generic[M]):
         pass
 
     @abstractmethod
-    def _generate(self, path: Path, **kwargs) -> Iterable[M]:
+    def _generate(self, path: Path, **kwargs) -> Iterator[M]:
         """
         Read the given file and generate morphological objects.
         """
@@ -53,7 +53,7 @@ class ModestDataset(ABC, Generic[M]):
     def _getCachePath(self) -> Path:
         return PathManagement.datasetCache(language=self._language, dataset_name=self._name)
 
-    def generate(self, **kwargs) -> Iterable[M]:
+    def generate(self, **kwargs) -> Iterator[M]:
         yield from self._generate(self._get() if not self._rerouted else self._rerouted, **kwargs)
 
     def card(self) -> DatasetCard:

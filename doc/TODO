@@ -1,4 +1,24 @@
 TODO:
+    - MorphyNet has entries that have just - which is apparently a code for "same as lemma" https://github.com/kbatsuren/MorphyNet/issues/7
+        - For Spanish and Italian, these are actually quite interesting cases. They are words like infinitives and the masculine singular of adjectives and participles.
+          That is: words that very clearly have bound morphemes, but the only way you could know about these morphemes is
+          to look at the next word's decomposition and steal the decomposition from there.
+          You would want to do this at download time.
+          Example:
+                cargar	cargar	V;NFIN	-
+                cargar	cargando	V|V.CVB;PRS	cargar|ando
+                preservado	preservado	ADJ;MASC;SG	-
+                preservado	preservada	ADJ|FEM;SG	preservado|a
+          should become
+                cargar	cargar	V;NFIN	cargar|ar
+                cargar	cargando	V|V.CVB;PRS	cargar|ando
+                preservado	preservado	ADJ;MASC;SG	preservado|o
+                preservado	preservada	ADJ|FEM;SG	preservado|a
+          ...which you could probably achieve as follows:
+            1. Let Viterbi find the morph corresponding to the last morpheme of the next word.
+            2. Trim that from that word to reveal a stem.
+            3. Assert that the first word is prefixed by this stem.
+            4. Let the first word's suffix is whatever is after that stem.
     - Add the following datasets:
         - LADEC: https://era.library.ualberta.ca/items/dc3b9033-14d0-48d7-b6fa-6398a30e61e4
         - MorphoLex: https://github.com/hugomailhot/MorphoLex-en/blob/master/MorphoLEX_en.xlsx

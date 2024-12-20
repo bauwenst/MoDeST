@@ -1,6 +1,3 @@
-# TODO: I wonder if you can train an algorithm/model to recognise morphemes unsupervised based on
-#       the supervised data of a word's (surface form, lexical form == lemma + tag) pair.
-#       Having that tag should basically resolve any ambiguity.
 from typing import Tuple
 from abc import abstractmethod, ABC
 
@@ -94,7 +91,8 @@ class WordDecompositionWithFreeSegmentation(WordDecomposition):
     """
     CELEX is an example of this.
 
-    Note that a "free-morpheme decomposition" also exists, see Minixhofer's CompoundPiece dataset.
+    Note that a "free-morpheme decomposition" (which would have a method decomposeFree) also exists,
+    see Minixhofer's CompoundPiece dataset.
     """
 
     @abstractmethod
@@ -112,8 +110,9 @@ class MorphologyVisitor(ABC):
     passing the method itself as an argument and calling that on an object of the class (e.g. pass in
     method = LemmaMorphology.morphsplit and then call method(obj), which is equivalent to obj.morphSplit()).
 
-    With inheritance, however, Python won't use the overridden version of the method dynamically, so all that is
-    executed is the 'pass' body. The solution is a visitor design pattern.
+    With inheritance, however, when you pass ParentClass.methodName to a function (because you don't know which subclass
+    will be used, only that you want to call methodName on it), Python won't use the overridden version SubClass.methodName
+    dynamically, so all that is executed is the 'pass' body. The solution is a visitor design pattern.
     """
     @abstractmethod
     def __call__(self, morphology: WordSegmentation) -> Tuple[str, ...]:
