@@ -37,9 +37,10 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
 
     def _generate(self, path: Path, **kwargs) -> Iterable[MorphoChallenge2010Morphology]:
         is_turkish = (self._language == langcodes.find("Turkish"))
+        verbose = kwargs.get("verbose", False)
 
         with open(path, "r", encoding="windows-1252") as handle:
-            for line in iterateHandle(handle):
+            for line in iterateHandle(handle, verbose=verbose):
                 lemma, tag = line.split("\t")
                 try:
                     yield MorphoChallenge2010Morphology(
@@ -47,5 +48,7 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
                         segmentation_tag=tag,
                         turkish_to_utf8=is_turkish
                     )
+                except GeneratorExit:
+                    raise GeneratorExit
                 except:
                     print(f"Failed to parse morphology: '{lemma}' tagged as '{tag}'")
