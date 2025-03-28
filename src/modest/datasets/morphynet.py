@@ -85,12 +85,21 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
     def _generate(self, path: Path, verbose: bool=False, skip_if_unknown: bool=False, **kwargs) -> Iterable[MorphyNetInflection]:
         prev: MorphyNetInflection = None
+
+        seen = set()
         for parts in iterateTsv(path, verbose=verbose):
             try:
                 lemma, word, tag, decomposition = parts
             except:
                 print("WARNING: Bad MorphyNet line:", "\t".join(parts))
                 continue
+
+            # There are duplicate decompositions in MorphyNet (either with a different tag, or literally just duplicate entries in the dataset).
+            compressed = (hash(decomposition), lemma[0:3])  # lemma reduces the possibility of collisions to basically 0.
+            if compressed in seen:
+                continue
+            seen.add(compressed)
+
             curr = MorphyNetInflection(
                 word=word,
                 raw_morpheme_sequence=decomposition,

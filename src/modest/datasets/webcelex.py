@@ -1,6 +1,7 @@
 """
 For downloading data from WebCelex.
 """
+import os
 import langcodes
 from pathlib import Path
 from typing import Iterable
@@ -10,6 +11,7 @@ from typing import Iterable
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 # - Parse stuff in browser
 from selenium.webdriver.common.by import By
@@ -43,10 +45,20 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
         if not cache_path.exists():
             print("Simulating browser to download CELEX dataset (takes under 60 seconds)...")
 
+            # Make options (custom arguments)
             chrome_options = Options()
             chrome_options.headless = True
             # chrome_options.add_experimental_option("detach", True)  # Add this if you want the browser to stay open after the experiment is done.
-            driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)  # If you get a "ValueError: There is no such driver by url", you need to pip upgrade the webdriver_manager package.
+
+            # Make service (mandatory arguments)
+            if os.name == "nt":
+                driver_path = Path(ChromeDriverManager().install()).parent / "chromedriver.exe"  # To prevent "OSError: [WinError 193] %1 is not a valid Win32 application". https://stackoverflow.com/a/78797164/9352077
+            else:
+                driver_path = Path(ChromeDriverManager().install())
+            service = Service(executable_path=driver_path.as_posix())
+
+            # Instantiate driver
+            driver = webdriver.Chrome(service=service, options=chrome_options)  # If you get a "ValueError: There is no such driver by url", you need to pip upgrade the webdriver_manager package.
             driver.implicitly_wait(3)  # Waiting time in case an element isn't found (WebCelex is slow...).
 
             # Entry page to select language

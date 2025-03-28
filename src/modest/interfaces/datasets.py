@@ -56,6 +56,9 @@ class ModestDataset(ABC, Generic[M]):
     def generate(self, **kwargs) -> Iterator[M]:
         yield from self._generate(self._get() if not self._rerouted else self._rerouted, **kwargs)
 
+    def identifier(self) -> str:
+        return self._name + "_" + self._language.language_name()
+
     def card(self) -> DatasetCard:
         return DatasetCard(name=self._name, language=self._language.language_name(), size=count(self.generate()))
 
