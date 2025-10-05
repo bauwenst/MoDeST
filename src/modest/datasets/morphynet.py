@@ -25,7 +25,13 @@ MORPHYNET_LANGUAGES = {
     langcodes.find("English"): "eng",
     langcodes.find("Finnish"): "fin",
     langcodes.find("French"): "fra",
-    langcodes.find("Serbo-Croatian"): "hbs",  # Possibly you want langcodes.find("Serbian") and langcodes.find("Croatian") to resolve to this code too.
+
+    langcodes.find("Serbo-Croatian"): "hbs",
+    langcodes.find("Bosnian")       : "hbs",
+    langcodes.find("Croatian")      : "hbs",
+    langcodes.find("Montenegrin")   : "hbs",
+    langcodes.find("Serbian")       : "hbs",
+
     langcodes.find("Hungarian"): "hun",
     langcodes.find("Italian"): "ita",
     langcodes.find("Mongolian"): "mon",
@@ -69,6 +75,8 @@ class MorphyNetDataset(ModestDataset[M]):
         if not cache_path.exists():
             url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{self._getRemoteFilename(morphynet_code, self._subset)}"
             response = requests.get(url)
+            if response.status_code == 404:
+                raise RuntimeError(f"The URL {url} does not exist.")
             with open(cache_path, "wb") as handle:
                 handle.write(response.content)
 
@@ -91,7 +99,8 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
             try:
                 lemma, word, tag, decomposition = parts
             except:
-                print("WARNING: Bad MorphyNet line:", "\t".join(parts))
+                line = '\t'.join(parts).strip()
+                LOGGER.warning(f"Bad MorphyNet line: {line if line else '(empty)'}")
                 continue
 
             # There are duplicate decompositions in MorphyNet (either with a different tag, or literally just duplicate entries in the dataset).
@@ -189,5 +198,5 @@ class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
                     prefix_not_suffix=(affix_type == "prefix")
                 )
             except:
-                print("Unparsable MorphyNet derivation:", parts)
+                LOGGER.warning(f"Unparsable MorphyNet derivation: {parts}")
                 pass

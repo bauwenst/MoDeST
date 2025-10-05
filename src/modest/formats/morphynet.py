@@ -69,11 +69,11 @@ class MorphyNetDerivation(WordDecomposition):
                 morphs = morphs[:-1] + [affix, last_morph]
                 morphemes.append(last_morph)
 
-        self.morphemes = tuple(morphemes)
-        self.morphs    = tuple(morphs)
+        self._morphemes = tuple(morphemes)
+        self._morphs    = tuple(morphs)
 
     def decompose(self) -> Tuple[str, ...]:
-        return self.morphemes
+        return self._morphemes
 
     def segment(self) -> Tuple[str, ...]:
-        return self.morphs
+        return self._morphs

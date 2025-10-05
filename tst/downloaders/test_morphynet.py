@@ -36,7 +36,7 @@ def get_examples():
     for thing in MorphyNetDerivation.generator(german):
     # for thing in MorphyNetDerivation.generator(italian):
     # for thing in MorphyNetDerivation.generator(spanish):
-        print(thing.lemma(), '->', thing.morphemes, '->', thing.morphSplit())
+        print(thing.lemma(), '->', thing._morphemes, '->', thing.morphSplit())
 
 
 def drafting():

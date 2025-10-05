@@ -1,6 +1,7 @@
 from pathlib import Path
 import langcodes
 import shutil
+import requests
 
 from ..datasets.morphynet import MorphyNetDataset_Derivation, MorphyNetDataset_Inflection, MorphynetSubset, MORPHYNET_LANGUAGES
 

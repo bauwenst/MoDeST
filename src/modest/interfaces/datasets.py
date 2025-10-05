@@ -6,6 +6,7 @@ from pathlib import Path
 import langcodes
 
 from ..paths import PathManagement
+from .morphologies import WordSegmentation
 
 
 @dataclass
@@ -17,7 +18,7 @@ class DatasetCard:
 
 Languageish = Union[langcodes.Language, str]
 
-M = TypeVar("M")
+M = TypeVar("M", bound=WordSegmentation)
 class ModestDataset(ABC, Generic[M]):
     """
     The responsibilities of this class's descendants are

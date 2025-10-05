@@ -1,12 +1,15 @@
+from typing import Iterable
 from pathlib import Path
+
 import langcodes
 import requests
-from typing import Iterable
+from logging import getLogger
 
 from ..interfaces.datasets import ModestDataset, Languageish
 from ..formats.tsv import iterateHandle
 from ..formats.morphochallenge2010 import MorphoChallenge2010Morphology
 
+LOGGER = getLogger(__name__)
 
 MC_LANGUAGES = {
     langcodes.find("English"): "eng",
@@ -51,4 +54,4 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
                 except GeneratorExit:
                     raise GeneratorExit
                 except:
-                    print(f"Failed to parse morphology: '{lemma}' tagged as '{tag}'")
+                    LOGGER.warning(f"Failed to parse morphology: '{lemma}' tagged as '{tag}'")
