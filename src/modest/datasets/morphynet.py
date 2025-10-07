@@ -98,6 +98,9 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
         for parts in iterateTsv(path, verbose=verbose):
             try:
                 lemma, word, tag, decomposition = parts
+                word = word.split(" ")[-1]
+                if "," in word or "''" in word or "(" in word:  # This happens e.g. in a couple Czech entries, although most are fixed after you split on spaces.
+                    raise
             except:
                 line = '\t'.join(parts).strip()
                 LOGGER.warning(f"Bad MorphyNet line: {line if line else '(empty)'}")
