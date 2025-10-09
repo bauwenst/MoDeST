@@ -72,13 +72,13 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
         langcodes.find("Yoruba"): "yo"
     }
 
-    def __init__(self, language: Languageish):
-        super().__init__(name="CompoundPiece", language=language)
+    def getName(self) -> str:
+        return "CompoundPiece"
 
     def _get(self) -> Path:
-        langcode = CompoundPieceDataset.LANGCODES.get(self._language)
+        langcode = CompoundPieceDataset.LANGCODES.get(self.getLanguage())
         if langcode is None:
-            raise ValueError(f"Unknown language: {self._language}")
+            raise ValueError(f"Unknown language: {self.getLanguage()}")
 
         cache = self._getCachePath() / f"{langcode}.S1-S2.tsv"
         if not cache.exists():
@@ -89,7 +89,7 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
 
         return cache
 
-    def _generate(self, path: Path, **kwargs) -> Iterable[TrivialDecomposition]:
+    def _generate(self, path: Path) -> Iterable[TrivialDecomposition]:
         for word, decomposition, segmentation in iterateTsv(path):
             yield TrivialDecomposition(
                 word=word,

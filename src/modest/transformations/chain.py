@@ -20,12 +20,12 @@ class ChainedModestDatasets(ModestDataset[T]):
     def _get(self) -> List[Path]:
         return [d._get() for d in self._datasets]
 
-    def _generate(self, path: List[Path], **kwargs) -> Iterator[T]:
+    def _generate(self, path: List[Path]) -> Iterator[T]:
         for d in self._datasets:
-            yield from d.generate(**kwargs)
+            yield from d.generate()
 
-    def generate(self, **kwargs) -> Iterator[T]:
-        yield from self._generate(self._get(), **kwargs)
+    def generate(self) -> Iterator[T]:
+        yield from self._generate(self._get())
 
     def rerouted(self, path: Path) -> Self:
         raise NotImplementedError

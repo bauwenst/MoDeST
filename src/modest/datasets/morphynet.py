@@ -7,6 +7,7 @@ URLs for MorphyNet have the following format:
 from enum import Enum
 from pathlib import Path
 from typing import Iterable
+from abc import abstractmethod
 
 import langcodes
 import requests
@@ -14,7 +15,7 @@ from logging import getLogger
 
 from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
 from ..formats.tsv import iterateTsv
-from ..interfaces.datasets import ModestDataset, M, Languageish
+from ..interfaces.datasets import ModestDataset, M
 
 LOGGER = getLogger(__name__)
 
@@ -62,18 +63,21 @@ class MorphyNetDataset(ModestDataset[M]):
     need different generator code.
     """
 
-    def __init__(self, language: Languageish, subset: MorphynetSubset):
-        super().__init__(name="MorphyNet", language=language)
-        self._subset = subset
+    @abstractmethod
+    def getSubset(self) -> MorphynetSubset:
+        pass
+
+    def getName(self) -> str:
+        return "MorphyNet"
 
     def _get(self) -> Path:
-        morphynet_code = MORPHYNET_LANGUAGES.get(self._language)
+        morphynet_code = MORPHYNET_LANGUAGES.get(self.getLanguage())
         if morphynet_code is None:
-            raise ValueError(f"Language not in MorphyNet: {self._language}")
+            raise ValueError(f"Language not in MorphyNet: {self.getLanguage()}")
 
-        cache_path = self._getCachePath() / f"{morphynet_code}.{self._subset.toString()}.v1.tsv"
+        cache_path = self._getCachePath() / f"{morphynet_code}.{self.getSubset().toString()}.v1.tsv"
         if not cache_path.exists():
-            url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{self._getRemoteFilename(morphynet_code, self._subset)}"
+            url = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{morphynet_code}/{self._getRemoteFilename(morphynet_code, self.getSubset())}"
             response = requests.get(url)
             if response.status_code == 404:
                 raise RuntimeError(f"The URL {url} does not exist.")
@@ -88,14 +92,19 @@ class MorphyNetDataset(ModestDataset[M]):
 
 class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
-    def __init__(self, language: Languageish):
-        super().__init__(language=language, subset=MorphynetSubset.INFLECTIONAL)
+    def __init__(self, verbose: bool=False, skip_if_unknown: bool=False):
+        super().__init__()
+        self._verbose = verbose
+        self._skip_if_unknown = skip_if_unknown
 
-    def _generate(self, path: Path, verbose: bool=False, skip_if_unknown: bool=False, **kwargs) -> Iterable[MorphyNetInflection]:
+    def getSubset(self) -> MorphynetSubset:
+        return MorphynetSubset.INFLECTIONAL
+
+    def _generate(self, path: Path) -> Iterable[MorphyNetInflection]:
         prev: MorphyNetInflection = None
 
         seen = set()
-        for parts in iterateTsv(path, verbose=verbose):
+        for parts in iterateTsv(path, verbose=self._verbose):
             try:
                 lemma, word, tag, decomposition = parts
                 word = word.split(" ")[-1]
@@ -128,7 +137,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
             # Impute the previous decomp if it doesn't exist.
             if prev.decompose() == tuple("-"):
-                if not skip_if_unknown:
+                if not self._skip_if_unknown:
                     try:
                         LOGGER.info(f"Last word '{prev.word}' had no morphemes. Will be imputed by looking forwards at {curr.word} -> {curr.morphemes}")
                         self._imputeMorphemes(with_known_morphemes=curr, with_unknown_morphemes=prev)
@@ -141,7 +150,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
                     prev = curr
                     continue
             elif curr.decompose() == tuple("-"):  # The fact that this is in an 'else' implies that prev has morphemes, which means even when this branch does nothing, you can output it.
-                if not skip_if_unknown:
+                if not self._skip_if_unknown:
                     try:
                         LOGGER.info(f"Current word '{curr.word}' has no morphemes, but the previous word did. Will be imputed by looking backwards at {prev.word} -> {prev.morphemes}")
                         self._imputeMorphemes(with_known_morphemes=prev, with_unknown_morphemes=curr)
@@ -187,11 +196,15 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
 class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
 
-    def __init__(self, language: Languageish):
-        super().__init__(language=language, subset=MorphynetSubset.DERIVATIONAL)
+    def __init__(self, verbose: bool=False):
+        super().__init__()
+        self._verbose = verbose
 
-    def _generate(self, path: Path, verbose: bool=False, **kwargs) -> Iterable[MorphyNetDerivation]:
-        for parts in iterateTsv(path, verbose=verbose):
+    def getSubset(self) -> MorphynetSubset:
+        return MorphynetSubset.DERIVATIONAL
+
+    def _generate(self, path: Path) -> Iterable[MorphyNetDerivation]:
+        for parts in iterateTsv(path, verbose=self._verbose):
             original, result, original_pos, result_pos, affix, affix_type = parts
             try:
                 yield MorphyNetDerivation(

@@ -1,8 +1,7 @@
-import langcodes
-
+from ..interfaces.datasets import Languageish
 from ..datasets.webcelex import CelexDataset
 
 
 class Dutch_Celex(CelexDataset):
-    def __init__(self):
-        super().__init__(language=langcodes.find("Dutch"))
+    def _getLanguage(self) -> Languageish:
+        return "Dutch"

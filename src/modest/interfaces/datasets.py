@@ -3,11 +3,12 @@ from typing_extensions import Self
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+from langcodes import Language
 import langcodes
 
 from ..paths import PathManagement
 from .morphologies import WordSegmentation
-
+from tktkt.util.types import L
 
 @dataclass
 class DatasetCard:
@@ -16,7 +17,7 @@ class DatasetCard:
     size: int
 
 
-Languageish = Union[langcodes.Language, str]
+Languageish = Union[Language, str]
 
 M = TypeVar("M", bound=WordSegmentation)
 class ModestDataset(ABC, Generic[M]):
@@ -31,11 +32,19 @@ class ModestDataset(ABC, Generic[M]):
     square brackets inside the inheritance parentheses.
     """
 
-    def __init__(self, name: str, language: Languageish):
-        self._name     = name
-        self._language = langcodes.find(language) if isinstance(language, str) else language
-
+    def __init__(self):  # It is very important that this constructor not have a language parameter. If it did, then dataset families which have extra arguments (e.g. to control verbosity) would have every one of their language datasets repeat those arguments in their constructor.
         self._rerouted: Path = None
+
+    @abstractmethod
+    def getName(self) -> str:
+        pass
+
+    @abstractmethod
+    def _getLanguage(self) -> Languageish:
+        pass
+
+    def getLanguage(self) -> Language:
+        return L(self._getLanguage())
 
     @abstractmethod
     def _get(self) -> Path:
@@ -45,23 +54,23 @@ class ModestDataset(ABC, Generic[M]):
         pass
 
     @abstractmethod
-    def _generate(self, path: Path, **kwargs) -> Iterator[M]:
+    def _generate(self, path: Path) -> Iterator[M]:
         """
         Read the given file and generate morphological objects.
         """
         pass
 
     def _getCachePath(self) -> Path:
-        return PathManagement.datasetCache(language=self._language, dataset_name=self._name)
+        return PathManagement.datasetCache(language=self.getLanguage(), dataset_name=self.getName())
 
-    def generate(self, **kwargs) -> Iterator[M]:
-        yield from self._generate(self._get() if not self._rerouted else self._rerouted, **kwargs)
+    def generate(self) -> Iterator[M]:
+        yield from self._generate(self._get() if not self._rerouted else self._rerouted)
 
     def identifier(self) -> str:
-        return self._name + "_" + self._language.language_name()
+        return self.getName() + "_" + self.getLanguage().language_name()
 
     def card(self) -> DatasetCard:
-        return DatasetCard(name=self._name, language=self._language.language_name(), size=count(self.generate()))
+        return DatasetCard(name=self.getName(), language=self.getLanguage().language_name(), size=count(self.generate()))
 
     def rerouted(self, path: Path) -> Self:
         """

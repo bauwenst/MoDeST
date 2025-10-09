@@ -37,12 +37,13 @@ for item in English_Celex().generate():
 ## Repo layout
 Currently, the repo looks as follows:
 ```
-data/              ---> Datasets hosted specifically by MoDeST on GitHub. Will NOT be downloaded when you install the package.
-src/modest/        ---> All source code for the Python package that will be installed in your interpreter.
-    languages/     ---> Per-language definitions of the classes users will interact with.
-    datasets/      ---> Support code for pulling in and reading remote data.
-    formats/       ---> Support code for turning tag formats into objects. (Tag formats are independent of how the tags are stored.)
-    interfaces/    ---> Declarations of the interfaces users will interact with.
+data/                ---> Datasets hosted specifically by MoDeST on GitHub. Will NOT be downloaded when you install the package.
+src/modest/          ---> All source code for the Python package that will be installed in your interpreter.
+    languages/       ---> Per-language definitions of the dataset classes users will interact with.
+    datasets/        ---> Support code for pulling in remote data, and reading raw examples from the resulting files.
+    formats/         ---> Support code for turning raw examples into objects. Mainly used for parsing tags, whose format is independent of how they are stored (TSV, XML, JSON, ...).
+    interfaces/      ---> Declarations of the interfaces users will interact with.
+    transformations/ ---> Operations performed on datasets.
 ```
 
 Currently, every language has its own file under `languages/`. The assumption is that the datasets pertaining to one language 

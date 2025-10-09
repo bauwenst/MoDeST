@@ -21,13 +21,17 @@ MC_LANGUAGES = {
 
 class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
 
-    def __init__(self, language: Languageish):
-        super().__init__(name="MC2010", language=language)
+    def __init__(self, verbose: bool=False):
+        super().__init__()
+        self._verbose = verbose
+
+    def getName(self) -> str:
+        return "MC2010"
 
     def _get(self) -> Path:
-        code = MC_LANGUAGES.get(self._language)
+        code = MC_LANGUAGES.get(self.getLanguage())
         if code is None:
-            raise ValueError(f"Unknown language: {self._language}")
+            raise ValueError(f"Unknown language: {self.getLanguage()}")
 
         cache = self._getCachePath() / f"{code}.segmentation.train.tsv"
         if not cache.exists():
@@ -38,12 +42,11 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
 
         return cache
 
-    def _generate(self, path: Path, **kwargs) -> Iterable[MorphoChallenge2010Morphology]:
-        is_turkish = (self._language == langcodes.find("Turkish"))
-        verbose = kwargs.get("verbose", False)
+    def _generate(self, path: Path) -> Iterable[MorphoChallenge2010Morphology]:
+        is_turkish = (self.getLanguage() == langcodes.find("Turkish"))
 
         with open(path, "r", encoding="windows-1252") as handle:
-            for line in iterateHandle(handle, verbose=verbose):
+            for line in iterateHandle(handle, verbose=self._verbose):
                 lemma, tag = line.split("\t")
                 try:
                     yield MorphoChallenge2010Morphology(

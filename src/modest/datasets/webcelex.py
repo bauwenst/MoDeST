@@ -33,15 +33,20 @@ CELEX_LANGUAGES = {
 
 class CelexDataset(ModestDataset[CelexLemmaMorphology]):
 
-    def __init__(self, language: Languageish):
-        super().__init__(name="CELEX", language=language)
+    def __init__(self, verbose: bool=False, legacy: bool=False):
+        super().__init__()
+        self._verbose = verbose
+        self._legacy = legacy
+
+    def getName(self) -> str:
+        return "CELEX"
 
     def _get(self) -> Path:
-        full_name = CELEX_LANGUAGES.get(self._language)
+        full_name = CELEX_LANGUAGES.get(self.getLanguage())
         if full_name is None:
-            raise ValueError(f"Unknown language: {self._language}")
+            raise ValueError(f"Unknown language: {self.getLanguage()}")
 
-        cache_path = self._getCachePath() / (f"{self._language.to_tag()}.struclab.tsv")
+        cache_path = self._getCachePath() / (f"{self.getLanguage().to_tag()}.struclab.tsv")
         if not cache_path.exists():
             print("Simulating browser to download CELEX dataset (takes under 60 seconds)...")
 
@@ -114,18 +119,16 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
                     if len(parts) == 2 and " " not in line:
                         out_handle.write(line + "\n")
 
-    def _generate(self, path: Path, **kwargs) -> Iterable[CelexLemmaMorphology]:
+    def _generate(self, path: Path) -> Iterable[CelexLemmaMorphology]:
         """
         TODO: From what I can guess (there is no manual for CELEX tags!), the [F] tag is used to indicate participles
               (past and present), which are treated as a single morpheme even though they clearly are not. For some,
               you can deduce the decomposition by re-using the verb's decomposition, so you could write some kind of
               a dataset sanitiser for that.
         """
-        verbose = kwargs.get("verbose", False)
-        legacy  = kwargs.get("legacy", False)
-        for word, tag in iterateTsv(path, verbose=verbose):
+        for word, tag in iterateTsv(path, verbose=self._verbose):
             try:
-                if "[F]" not in tag and (legacy or "'" not in word):
+                if "[F]" not in tag and (self._legacy or "'" not in word):
                     yield CelexLemmaMorphology(lemma=word, celex_struclab=tag)
             except GeneratorExit:  # When a generator goes out of scope before being depleted, a method is called on it that still runs the next 'yield' but raises a GeneratorExit instead. You must not inhibit this exception.
                 raise GeneratorExit
