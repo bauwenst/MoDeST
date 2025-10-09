@@ -103,7 +103,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
                     raise
             except:
                 line = '\t'.join(parts).strip()
-                LOGGER.warning(f"Bad MorphyNet line: {line if line else '(empty)'}")
+                LOGGER.info(f"Bad MorphyNet line: {line if line else '(empty)'}")
                 continue
 
             # There are duplicate decompositions in MorphyNet (either with a different tag, or literally just duplicate entries in the dataset).
