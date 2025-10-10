@@ -6,7 +6,7 @@ URLs for MorphyNet have the following format:
 """
 from enum import Enum
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Any, Iterator
 from abc import abstractmethod
 
 import langcodes
@@ -16,8 +16,9 @@ from logging import getLogger
 from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
 from ..formats.tsv import iterateTsv
 from ..interfaces.datasets import ModestDataset, M
+from ..interfaces.kernels import ModestKernel, Raw
 
-LOGGER = getLogger(__name__)
+logger = getLogger(__name__)
 
 MORPHYNET_LANGUAGES = {
     langcodes.find("Catalan"): "cat",
@@ -67,10 +68,10 @@ class MorphyNetDataset(ModestDataset[M]):
     def getSubset(self) -> MorphynetSubset:
         pass
 
-    def getName(self) -> str:
+    def getCollectionName(self) -> str:
         return "MorphyNet"
 
-    def _get(self) -> Path:
+    def _files(self) -> list[Path]:
         morphynet_code = MORPHYNET_LANGUAGES.get(self.getLanguage())
         if morphynet_code is None:
             raise ValueError(f"Language not in MorphyNet: {self.getLanguage()}")
@@ -84,7 +85,7 @@ class MorphyNetDataset(ModestDataset[M]):
             with open(cache_path, "wb") as handle:
                 handle.write(response.content)
 
-        return cache_path
+        return [cache_path]
 
     def _getRemoteFilename(self, langcode: str, subset: MorphynetSubset) -> str:
         return f"{langcode}.{subset.toString()}.v1.tsv"
@@ -100,11 +101,27 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
     def getSubset(self) -> MorphynetSubset:
         return MorphynetSubset.INFLECTIONAL
 
-    def _generate(self, path: Path) -> Iterable[MorphyNetInflection]:
-        prev: MorphyNetInflection = None
+    def _kernels(self) -> list[ModestKernel[Any,MorphyNetInflection]]:
+        return [_MorphyNetKernel_Inflection(verbose=self._verbose, skip_if_unknown=self._skip_if_unknown)]
 
+
+class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetInflection]):
+
+    def __init__(self, verbose: bool, skip_if_unknown: bool):
+        self._verbose = verbose
+        self._skip_if_unknown = skip_if_unknown
+
+    def _generateRaw(self, path: Path):
+        yield from enumerate(iterateTsv(path, verbose=self._verbose))
+
+    def _parseRaw(self, raw, id: int):
+        raise NotImplementedError()  # We don't implement example-per-example parsing because they depend on each other.
+
+    def _generateObjects(self, path: Path):
+        prev = None
         seen = set()
-        for parts in iterateTsv(path, verbose=self._verbose):
+
+        for id, parts in self._generateRaw(path):
             try:
                 lemma, word, tag, decomposition = parts
                 word = word.split(" ")[-1]
@@ -112,7 +129,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
                     raise
             except:
                 line = '\t'.join(parts).strip()
-                LOGGER.info(f"Bad MorphyNet line: {line if line else '(empty)'}")
+                logger.info(f"Bad MorphyNet line: {line if line else '(empty)'}")
                 continue
 
             # There are duplicate decompositions in MorphyNet (either with a different tag, or literally just duplicate entries in the dataset).
@@ -122,6 +139,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
             seen.add(compressed)
 
             curr = MorphyNetInflection(
+                id=id,
                 word=word,
                 raw_morpheme_sequence=decomposition,
                 lemma=lemma,
@@ -139,11 +157,11 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
             if prev.decompose() == tuple("-"):
                 if not self._skip_if_unknown:
                     try:
-                        LOGGER.info(f"Last word '{prev.word}' had no morphemes. Will be imputed by looking forwards at {curr.word} -> {curr.morphemes}")
+                        logger.info(f"Last word '{prev.word}' had no morphemes. Will be imputed by looking forwards at {curr.word} -> {curr.morphemes}")
                         self._imputeMorphemes(with_known_morphemes=curr, with_unknown_morphemes=prev)
-                        LOGGER.info(f"\t{prev.morphemes}")
+                        logger.info(f"\t{prev.morphemes}")
                     except:
-                        LOGGER.info(f"\tFAILED; {prev.word} removed from dataset.")
+                        logger.info(f"\tFAILED; {prev.word} removed from dataset.")
                         prev = curr
                         continue
                 else:
@@ -152,11 +170,11 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
             elif curr.decompose() == tuple("-"):  # The fact that this is in an 'else' implies that prev has morphemes, which means even when this branch does nothing, you can output it.
                 if not self._skip_if_unknown:
                     try:
-                        LOGGER.info(f"Current word '{curr.word}' has no morphemes, but the previous word did. Will be imputed by looking backwards at {prev.word} -> {prev.morphemes}")
+                        logger.info(f"Current word '{curr.word}' has no morphemes, but the previous word did. Will be imputed by looking backwards at {prev.word} -> {prev.morphemes}")
                         self._imputeMorphemes(with_known_morphemes=prev, with_unknown_morphemes=curr)
-                        LOGGER.info(f"\t{curr.morphemes}")
+                        logger.info(f"\t{curr.morphemes}")
                     except:
-                        LOGGER.info(f"\tFAILED; trying again soon.")
+                        logger.info(f"\tFAILED; trying again soon.")
                         # Still output prev.
 
             # Output
@@ -185,7 +203,7 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
             uncertain = True
         assert stem
         if uncertain:
-            LOGGER.info("\tWARNING: removed only part of the found stem. May have removed too much stem.")
+            logger.info("\tWARNING: removed only part of the found stem. May have removed too much stem.")
 
         suffix = with_unknown_morphemes.word.removeprefix(stem)
         if suffix:
@@ -203,16 +221,27 @@ class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
     def getSubset(self) -> MorphynetSubset:
         return MorphynetSubset.DERIVATIONAL
 
-    def _generate(self, path: Path) -> Iterable[MorphyNetDerivation]:
-        for parts in iterateTsv(path, verbose=self._verbose):
-            original, result, original_pos, result_pos, affix, affix_type = parts
-            try:
-                yield MorphyNetDerivation(
-                    word=result,
-                    base=original,
-                    affix=affix,
-                    prefix_not_suffix=(affix_type == "prefix")
-                )
-            except:
-                LOGGER.warning(f"Unparsable MorphyNet derivation: {parts}")
-                pass
+    def _kernels(self) -> list[ModestKernel[Any,MorphyNetDerivation]]:
+        return [_MorphyNetKernel_Derivation(verbose=self._verbose)]
+
+
+class _MorphyNetKernel_Derivation(ModestKernel[tuple[str,str,str,str,str,str],MorphyNetDerivation]):
+
+    def __init__(self, verbose: bool=False):
+        self._verbose = verbose
+
+    def _generateRaw(self, path: Path):
+        yield from enumerate(iterateTsv(path, verbose=self._verbose))
+
+    def _parseRaw(self, raw, id: int):
+        original, result, original_pos, result_pos, affix, affix_type = raw
+        return MorphyNetDerivation(
+            id=id,
+            word=result,
+            base=original,
+            affix=affix,
+            prefix_not_suffix=(affix_type == "prefix")
+        )
+
+    def _createWriter(self, path: Path):
+        raise NotImplementedError()

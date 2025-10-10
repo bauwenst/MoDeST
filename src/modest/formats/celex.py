@@ -25,7 +25,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
 
     POS_TAG = re.compile(r"\[[^\]]+\]")
 
-    def __init__(self, celex_struclab: str, lemma: str= "", morph_stack: AlignmentStack=None):
+    def __init__(self, id: int, celex_struclab: str, lemma: str= "", morph_stack: AlignmentStack=None):
         """
         Tree representation of a morphologically decomposed lemma in the CELEX lexicon.
         No guarantees if the input doesn't abide by the specification below.
@@ -58,7 +58,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
         self.is_prefix = "|." in self.pos or self.pos == "[P]"
         self.is_suffix = ".]" in self.pos
         self.is_interfix = not self.is_prefix and not self.is_suffix and "." in self.pos
-        self.children = [CelexLemmaMorphology(sub_celex, morph_stack=morph_stack) for sub_celex in child_strings]
+        self.children = [CelexLemmaMorphology(None, sub_celex, morph_stack=morph_stack) for sub_celex in child_strings]
         if self.children:
             self.morphemetext = "+".join([c.morphemetext for c in self.children])
             self.morphtext    =  "".join([c.morphtext    for c in self.children])
@@ -79,7 +79,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
 
             morph_stack.current_morpheme += 1
 
-        super().__init__(word=self.morphtext)
+        super().__init__(id=id, word=self.morphtext)
 
     def __repr__(self):  # This is some juicy recursion right here
         lines = [self.morphtext + self.pos]

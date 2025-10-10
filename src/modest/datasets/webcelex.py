@@ -4,7 +4,7 @@ For downloading data from WebCelex.
 import os
 import langcodes
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Iterator, Any
 
 # Web stuff
 # - Make browser
@@ -19,15 +19,17 @@ from selenium.webdriver.support.wait import WebDriverWait
 import time
 import bs4
 
+from tktkt.util.types import L
+
 from ..formats.celex import CelexLemmaMorphology
 from ..formats.tsv import iterateHandle, iterateTsv
 from ..interfaces.datasets import ModestDataset, Languageish
-
+from ..interfaces.kernels import ModestKernel
 
 CELEX_LANGUAGES = {
-    langcodes.find("English"): "English",
-    langcodes.find("German"): "German",
-    langcodes.find("Dutch"): "Dutch"
+    L("English"): "English",
+    L("German"): "German",
+    L("Dutch"): "Dutch"
 }
 
 
@@ -38,10 +40,13 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
         self._verbose = verbose
         self._legacy = legacy
 
-    def getName(self) -> str:
+    def getCollectionName(self) -> str:
         return "CELEX"
 
-    def _get(self) -> Path:
+    def _kernels(self) -> list[ModestKernel[Any,CelexLemmaMorphology]]:
+        return [_CelexKernel(self._verbose, self._legacy)]
+
+    def _files(self) -> list[Path]:
         full_name = CELEX_LANGUAGES.get(self.getLanguage())
         if full_name is None:
             raise ValueError(f"Unknown language: {self.getLanguage()}")
@@ -106,7 +111,7 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
                         out_handle.write(word.text + "\t" + tag.text + "\n")
             print("Successfully downloaded CELEX.")
 
-        return cache_path
+        return [cache_path]
 
     def _cleanFile(self, file: Path):
         """
@@ -119,18 +124,28 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
                     if len(parts) == 2 and " " not in line:
                         out_handle.write(line + "\n")
 
-    def _generate(self, path: Path) -> Iterable[CelexLemmaMorphology]:
+
+class _CelexKernel(ModestKernel[tuple[str,str],CelexLemmaMorphology]):
+
+    def __init__(self, verbose: bool, legacy: bool):
+        self._verbose= verbose
+        self._legacy = legacy
+
+    def _generateRaw(self, path: Path):
+        yield from enumerate(iterateTsv(path, verbose=self._verbose))
+
+    def _parseRaw(self, raw: tuple[str,str], id: int):
         """
         TODO: From what I can guess (there is no manual for CELEX tags!), the [F] tag is used to indicate participles
               (past and present), which are treated as a single morpheme even though they clearly are not. For some,
               you can deduce the decomposition by re-using the verb's decomposition, so you could write some kind of
               a dataset sanitiser for that.
         """
-        for word, tag in iterateTsv(path, verbose=self._verbose):
-            try:
-                if "[F]" not in tag and (self._legacy or "'" not in word):
-                    yield CelexLemmaMorphology(lemma=word, celex_struclab=tag)
-            except GeneratorExit:  # When a generator goes out of scope before being depleted, a method is called on it that still runs the next 'yield' but raises a GeneratorExit instead. You must not inhibit this exception.
-                raise GeneratorExit
-            except:
-                print(f"Failed to parse morphology: '{word}' tagged as '{tag}'")
+        word, tag = raw
+        if "[F]" not in tag and (self._legacy or "'" not in word):
+            return CelexLemmaMorphology(id=id, lemma=word, celex_struclab=tag)
+        else:
+            raise
+
+    def _createWriter(self, path: Path):
+        raise NotImplementedError()

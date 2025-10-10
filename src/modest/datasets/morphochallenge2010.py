@@ -1,21 +1,25 @@
-from typing import Iterable
+from typing import Iterable, Iterator, Any
 from pathlib import Path
 
-import langcodes
 import requests
 from logging import getLogger
+
+from ..interfaces.kernels import ModestKernel, Raw, M
+
+logger = getLogger(__name__)
+
+from tktkt.util.types import L
 
 from ..interfaces.datasets import ModestDataset, Languageish
 from ..formats.tsv import iterateHandle
 from ..formats.morphochallenge2010 import MorphoChallenge2010Morphology
 
-LOGGER = getLogger(__name__)
 
 MC_LANGUAGES = {
-    langcodes.find("English"): "eng",
-    langcodes.find("Finnish"): "fin",
-    # langcodes.find("German"): "ger",  # TODO: Only has decompositions, no segmentations. That means you need a simpler parser but have the same information.
-    langcodes.find("Turkish"): "tur"
+    L("English"): "eng",
+    L("Finnish"): "fin",
+    # L("German"): "ger",  # TODO: Only has decompositions, no segmentations. That means you need a simpler parser but have the same information.
+    L("Turkish"): "tur"
 }
 
 
@@ -25,10 +29,13 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
         super().__init__()
         self._verbose = verbose
 
-    def getName(self) -> str:
+    def getCollectionName(self) -> str:
         return "MC2010"
 
-    def _get(self) -> Path:
+    def _kernels(self) -> list[ModestKernel[Any,MorphoChallenge2010Morphology]]:
+        return [_MorphoChallengeKernel(verbose=self._verbose, is_turkish=self.getLanguage() == L("Turkish"))]
+
+    def _files(self) -> list[Path]:
         code = MC_LANGUAGES.get(self.getLanguage())
         if code is None:
             raise ValueError(f"Unknown language: {self.getLanguage()}")
@@ -40,21 +47,31 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
             with open(cache, "wb") as handle:
                 handle.write(response.content)
 
-        return cache
+        return [cache]
 
-    def _generate(self, path: Path) -> Iterable[MorphoChallenge2010Morphology]:
-        is_turkish = (self.getLanguage() == langcodes.find("Turkish"))
 
+class _MorphoChallengeKernel(ModestKernel[str, MorphoChallenge2010Morphology]):
+
+    def __init__(self, verbose: bool, is_turkish: bool):
+        self._verbose = verbose
+        self._is_turkish = is_turkish
+
+    def _generateRaw(self, path: Path) -> Iterator[tuple[int,str]]:
         with open(path, "r", encoding="windows-1252") as handle:
-            for line in iterateHandle(handle, verbose=self._verbose):
-                lemma, tag = line.split("\t")
-                try:
-                    yield MorphoChallenge2010Morphology(
-                        word=lemma,
-                        segmentation_tag=tag,
-                        turkish_to_utf8=is_turkish
-                    )
-                except GeneratorExit:
-                    raise GeneratorExit
-                except:
-                    LOGGER.warning(f"Failed to parse morphology: '{lemma}' tagged as '{tag}'")
+            yield from enumerate(iterateHandle(handle, verbose=self._verbose))
+
+    def _parseRaw(self, raw: str, id: int) -> MorphoChallenge2010Morphology:
+        lemma, tag = raw.split("\t")
+        try:
+            return MorphoChallenge2010Morphology(
+                id=id,
+                word=lemma,
+                segmentation_tag=tag,
+                turkish_to_utf8=self._is_turkish
+            )
+        except:
+            logger.info(f"Failed to parse morphology: '{lemma}' tagged as '{tag}'")
+            raise RuntimeError()
+
+    def _createWriter(self, path: Path):
+        raise NotImplementedError()

@@ -4,36 +4,44 @@ from abc import abstractmethod, ABC
 from ..algorithms.alignment import alignMorphemes_Viterbi
 
 
-class WordSegmentation(ABC):
-    """
-    For datasets that contain at least
-        segmentation: meta/stas/ize
-    """
-
-    def __init__(self, word: str):
+class _IdentifiedWord:
+    def __init__(self, id: int, word: str):
+        self._id = id
         self.word = word  # Also called the "surface form" a.o.t. the "lexical form" which is (lemma, tag). https://en.wikipedia.org/wiki/Morphological_dictionary
 
+
+class _AddSegmentation(ABC):
     @abstractmethod
     def segment(self) -> Tuple[str, ...]:  # Should be faster than a list.  https://stackoverflow.com/a/22140115/9352077
         pass
 
 
-class WordDecomposition(WordSegmentation):  # All decompositions should be able to be segmented.
+class WordSegmentation(_IdentifiedWord, _AddSegmentation):
+    """
+    For datasets that contain at least
+        segmentation: meta/stas/ize
+    """
+    pass
+
+
+class _AddDecomposition(ABC):
+    @abstractmethod
+    def decompose(self) -> Tuple[str, ...]:
+        pass
+
+
+class WordDecomposition(WordSegmentation, _AddDecomposition):  # All decompositions should be able to be segmented.
     """
     For datasets that contain at least
                  word: metastasize
         decomposition: meta stasis ize
     """
 
-    @abstractmethod
-    def decompose(self) -> Tuple[str, ...]:
-        pass
-
     def segment(self) -> Tuple[str, ...]:
         return tuple(alignMorphemes_Viterbi(self.word, self.decompose())[0].split(" "))
 
 
-class LexicalForm(ABC):
+class _IdentifiedLexicalForm(_IdentifiedWord):
     """
     For datasets that contain at least
          word: reconstituées
@@ -41,13 +49,13 @@ class LexicalForm(ABC):
           tag: V|V.PTCP;PST|FEM|PL
     """
 
-    def __init__(self, word: str, lemma: str, tag: str):
-        self.word  = word
+    def __init__(self, id: int, word: str, lemma: str, tag: str):
+        super().__init__(id, word)
         self.lemma = lemma
         self.tag   = tag
 
 
-class WordSegmentationWithLexicalForm(LexicalForm, WordSegmentation):
+class WordSegmentationWithLexicalForm(_IdentifiedLexicalForm, WordSegmentation):
     """
     For datasets that contain at least
         segmentation: reconstitu|é|e|s
@@ -57,7 +65,7 @@ class WordSegmentationWithLexicalForm(LexicalForm, WordSegmentation):
     pass
 
 
-class WordDecompositionWithLexicalForm(LexicalForm, WordDecomposition):
+class WordDecompositionWithLexicalForm(WordSegmentationWithLexicalForm, _AddDecomposition):  # TODO: The one downside of this kind of inheritance is that this class is not a subclass of WordDecomposition.
     """
     For datasets that contain at least
                  word: reconstituées

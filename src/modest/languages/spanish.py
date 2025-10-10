@@ -14,7 +14,7 @@ class Spanish_MorphyNet_Inflections(MorphyNetDataset_Inflection):
     def _getLanguage(self) -> Languageish:
         return "Spanish"
 
-    def _get(self) -> Path:
+    def _files(self) -> Path:
         cache_path = self._getCachePath() / "spa.inflectional.v1.tsv"
         if not cache_path.exists():
             url1 = f"https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/spa/spa.inflectional.v1.part1.tsv"

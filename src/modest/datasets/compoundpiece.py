@@ -1,81 +1,87 @@
 """
 For downloading files from the HuggingFace hub.
 """
+from typing import Any
+
 import datasets
-import langcodes
 from pathlib import Path
-from typing import Iterable
+
+from tktkt.util.types import L
 
 from ..formats.trivial import TrivialDecomposition
-from ..interfaces.datasets import ModestDataset, Languageish
+from ..interfaces.datasets import ModestDataset, Languageish, M
 from ..formats.tsv import iterateTsv
+from ..interfaces.kernels import ModestKernel
 
 
 class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
 
     LANGCODES = {
-        langcodes.find("Afrikaans"): "af",
-        langcodes.find("Azerbaijani"): "az",
-        langcodes.find("Belarusian"): "be",
-        langcodes.find("Bulgarian"): "bg",
-        langcodes.find("Bengali"): "bn",
-        langcodes.find("Catalan"): "ca",
-        langcodes.find("Czech"): "cs",
-        langcodes.find("Welsh"): "cy",
-        langcodes.find("Danish"): "da",
-        langcodes.find("German"): "de",
-        langcodes.find("Greek"): "el",
-        langcodes.find("English"): "en",
-        langcodes.find("Esperanto"): "eo",
-        langcodes.find("Spanish"): "es",
-        langcodes.find("Estonian"): "et",
-        langcodes.find("Basque"): "eu",
-        langcodes.find("Persian"): "fa",
-        langcodes.find("Finnish"): "fi",
-        langcodes.find("French"): "fr",
-        langcodes.find("Western-Frisian"): "fy",
-        langcodes.find("Irish"): "ga",
-        langcodes.find("Galician"): "gl",
-        langcodes.find("Gujarati"): "gu",
-        langcodes.find("Hebrew"): "he",
-        langcodes.find("Hindi"): "hi",
-        langcodes.find("Hungarian"): "hu",
-        langcodes.find("Armenian"): "hy",
-        langcodes.find("Indonesian"): "id",
-        langcodes.find("Icelandic"): "is",
-        langcodes.find("Italian"): "it",
-        langcodes.find("Georgian"): "ka",
-        langcodes.find("Kazakh"): "kk",
-        langcodes.find("Kirghiz"): "ky",
-        langcodes.find("Latin"): "la",
-        langcodes.find("Lithuanian"): "lt",
-        langcodes.find("Latvian"): "lv",
-        langcodes.find("Malagasy"): "mg",
-        langcodes.find("Macedonian"): "mk",
-        langcodes.find("Malayalam"): "ml",
-        langcodes.find("Maltese"): "mt",
-        langcodes.find("Dutch"): "nl",
-        langcodes.find("Panjabi"): "pa",
-        langcodes.find("Polish"): "pl",
-        langcodes.find("Portuguese"): "pt",
-        langcodes.find("Romanian"): "ro",
-        langcodes.find("Russian"): "ru",
-        langcodes.find("Slovak"): "sk",
-        langcodes.find("Albanian"): "sq",
-        langcodes.find("Swedish"): "sv",
-        langcodes.find("Tamil"): "ta",
-        langcodes.find("Telugu"): "te",
-        langcodes.find("Thai"): "th",
-        langcodes.find("Turkish"): "tr",
-        langcodes.find("Ukrainian"): "uk",
-        langcodes.find("Yiddish"): "yi",
-        langcodes.find("Yoruba"): "yo"
+        L("Afrikaans"): "af",
+        L("Azerbaijani"): "az",
+        L("Belarusian"): "be",
+        L("Bulgarian"): "bg",
+        L("Bengali"): "bn",
+        L("Catalan"): "ca",
+        L("Czech"): "cs",
+        L("Welsh"): "cy",
+        L("Danish"): "da",
+        L("German"): "de",
+        L("Greek"): "el",
+        L("English"): "en",
+        L("Esperanto"): "eo",
+        L("Spanish"): "es",
+        L("Estonian"): "et",
+        L("Basque"): "eu",
+        L("Persian"): "fa",
+        L("Finnish"): "fi",
+        L("French"): "fr",
+        L("Western-Frisian"): "fy",
+        L("Irish"): "ga",
+        L("Galician"): "gl",
+        L("Gujarati"): "gu",
+        L("Hebrew"): "he",
+        L("Hindi"): "hi",
+        L("Hungarian"): "hu",
+        L("Armenian"): "hy",
+        L("Indonesian"): "id",
+        L("Icelandic"): "is",
+        L("Italian"): "it",
+        L("Georgian"): "ka",
+        L("Kazakh"): "kk",
+        L("Kirghiz"): "ky",
+        L("Latin"): "la",
+        L("Lithuanian"): "lt",
+        L("Latvian"): "lv",
+        L("Malagasy"): "mg",
+        L("Macedonian"): "mk",
+        L("Malayalam"): "ml",
+        L("Maltese"): "mt",
+        L("Dutch"): "nl",
+        L("Panjabi"): "pa",
+        L("Polish"): "pl",
+        L("Portuguese"): "pt",
+        L("Romanian"): "ro",
+        L("Russian"): "ru",
+        L("Slovak"): "sk",
+        L("Albanian"): "sq",
+        L("Swedish"): "sv",
+        L("Tamil"): "ta",
+        L("Telugu"): "te",
+        L("Thai"): "th",
+        L("Turkish"): "tr",
+        L("Ukrainian"): "uk",
+        L("Yiddish"): "yi",
+        L("Yoruba"): "yo"
     }
 
-    def getName(self) -> str:
+    def getCollectionName(self) -> str:
         return "CompoundPiece"
 
-    def _get(self) -> Path:
+    def _kernels(self) -> list[ModestKernel[Any,M]]:
+        return [_CompoundPieceKernel()]
+
+    def _files(self) -> list[Path]:
         langcode = CompoundPieceDataset.LANGCODES.get(self.getLanguage())
         if langcode is None:
             raise ValueError(f"Unknown language: {self.getLanguage()}")
@@ -87,13 +93,23 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
                 for row in data.filter(lambda row: row["lang"] == langcode):
                     handle.write(row["word"] + "\t" + row["norm"] + "\t" + row["segmentation"] + "\n")
 
-        return cache
+        return [cache]
 
-    def _generate(self, path: Path) -> Iterable[TrivialDecomposition]:
-        for word, decomposition, segmentation in iterateTsv(path):
-            yield TrivialDecomposition(
-                word=word,
-                decomposition_tag=decomposition,
-                segmentation_tag=segmentation,
-                sep="-"
-            )
+
+class _CompoundPieceKernel(ModestKernel[tuple[str,str,str],TrivialDecomposition]):
+
+    def _generateRaw(self, path: Path):
+        yield from enumerate(iterateTsv(path))
+
+    def _parseRaw(self, raw, id: int):
+        word, decomposition, segmentation = raw
+        yield TrivialDecomposition(
+            id=id,
+            word=word,
+            decomposition_tag=decomposition,
+            segmentation_tag=segmentation,
+            sep="-"
+        )
+
+    def _createWriter(self, path: Path):
+        raise NotImplementedError()

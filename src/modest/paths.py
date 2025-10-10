@@ -14,12 +14,19 @@ class PathManagement:
 
     @staticmethod
     def datasetCache(language: Language, dataset_name: str) -> Path:
+        """
+        Returns a folder in which to store data-specific files for future use.
+        """
         if not language.is_valid() or not dataset_name:
             raise ValueError("Dataset must have a valid language and a non-empty name!")
         return PathManagement._extendHome([language.language_name(), dataset_name])
 
     @staticmethod
     def namelessCache() -> Path:
+        """
+        Returns a folder shared by all datasets.
+        Will not be deleted, but you should not store dataset-specific data here.
+        """
         return PathManagement._extendHome(["_cache"])
 
     @staticmethod

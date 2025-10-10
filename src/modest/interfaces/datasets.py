@@ -1,11 +1,11 @@
-from typing import Iterable, Iterator, TypeVar, Generic, Union
+from typing import Iterable, Iterator, TypeVar, Generic, Union, Any
 from typing_extensions import Self
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
+from dataclasses import dataclass
 from langcodes import Language
-import langcodes
 
+from .kernels import ModestKernel
 from ..paths import PathManagement
 from .morphologies import WordSegmentation
 from tktkt.util.types import L
@@ -13,7 +13,7 @@ from tktkt.util.types import L
 @dataclass
 class DatasetCard:
     name: str
-    language: str
+    language: Language
     size: int
 
 
@@ -22,6 +22,7 @@ Languageish = Union[Language, str]
 M = TypeVar("M", bound=WordSegmentation)
 class ModestDataset(ABC, Generic[M]):
     """
+    TODO: update this now that Kernels exist
     The responsibilities of this class's descendants are
         1. Knowing how to talk to the external source that carries the data;
         2. Reading those data once they have been pulled and transforming the raw data into the relevant constructor arguments.
@@ -33,46 +34,56 @@ class ModestDataset(ABC, Generic[M]):
     """
 
     def __init__(self):  # It is very important that this constructor not have a language parameter. If it did, then dataset families which have extra arguments (e.g. to control verbosity) would have every one of their language datasets repeat those arguments in their constructor.
-        self._rerouted: Path = None
+        self._rerouted: list[Path] = []
+
+    # Implement when defining the collection:
 
     @abstractmethod
-    def getName(self) -> str:
+    def getCollectionName(self) -> str:
         pass
+
+    @abstractmethod
+    def _kernels(self) -> list[ModestKernel[Any,M]]:
+        pass
+
+    @abstractmethod
+    def _files(self) -> list[Path]:
+        """
+        Talk to the external data repository to pull the data for this dataset locally, and return its storage location.
+        Exactly one path is required per kernel.
+        """
+        pass
+
+    def _getCachePath(self) -> Path:  # Will always be used by _files()
+        return PathManagement.datasetCache(language=self.getLanguage(), dataset_name=self.getCollectionName())
+
+    # Implement in language-specific subclasses of the collection:
 
     @abstractmethod
     def _getLanguage(self) -> Languageish:
         pass
 
+    # Pre-implemented user-facing methods
+
+    def generate(self) -> Iterator[M]:
+        kernels = self._kernels()
+        paths   = self._files() if not self._rerouted else self._rerouted
+        assert len(kernels) == len(paths), f"Got {len(kernels)} kernels but {len(paths)} paths." + bool(self._rerouted)*" Note that this dataset was rerouted."
+        for kernel, path in zip(kernels,paths):
+            yield from kernel._generateObjects(path)
+
     def getLanguage(self) -> Language:
         return L(self._getLanguage())
 
-    @abstractmethod
-    def _get(self) -> Path:
-        """
-        Talk to the external data repository to pull the data locally, and return the file path to it.
-        """
-        pass
-
-    @abstractmethod
-    def _generate(self, path: Path) -> Iterator[M]:
-        """
-        Read the given file and generate morphological objects.
-        """
-        pass
-
-    def _getCachePath(self) -> Path:
-        return PathManagement.datasetCache(language=self.getLanguage(), dataset_name=self.getName())
-
-    def generate(self) -> Iterator[M]:
-        yield from self._generate(self._get() if not self._rerouted else self._rerouted)
-
     def identifier(self) -> str:
-        return self.getName() + "_" + self.getLanguage().language_name()
+        """A unique name for the dataset."""
+        return self.getCollectionName() + "_" + self.getLanguage().language_name()
 
     def card(self) -> DatasetCard:
-        return DatasetCard(name=self.getName(), language=self.getLanguage().language_name(), size=count(self.generate()))
+        """A summary of the dataset."""
+        return DatasetCard(name=self.getCollectionName(), language=self.getLanguage(), size=count(self.generate()))
 
-    def rerouted(self, path: Path) -> Self:
+    def rerouted(self, paths: Union[Path,list[Path]]) -> Self:
         """
         Override the path used by the generator, bypassing ._get().
         Returns itself so you can call it on the same line as the constructor. Not a constructor argument because otherwise
@@ -80,10 +91,10 @@ class ModestDataset(ABC, Generic[M]):
 
         Note: you should NOT be rerouting to a file unless it is basically equivalent to what ._get() would fetch.
               If you're rerouting to a file to go from (dataset1, format) to (dataset2, format), you should just
-              create a new ModestDataset. This is also why there is no way to impute the rerouted path, because that
-              would come down to making a new class with a dedicated ._get().
+              create a new ModestDataset. This is also why the rerouting path comes from the user rather than from
+              a method implementation, because otherwise it would be identical to ._get().
         """
-        self._rerouted = path
+        self._rerouted = paths if isinstance(paths, list) else [paths]
         return self
 
 

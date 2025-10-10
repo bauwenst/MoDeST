@@ -9,8 +9,8 @@ class TrivialDecomposition(WordDecomposition):
     Nothing more, nothing less. Morphemes and morphs separated by a special character.
     """
 
-    def __init__(self, word: str, decomposition_tag: str, segmentation_tag: str, sep: str):
-        super().__init__(word=word)
+    def __init__(self, id: int, word: str, decomposition_tag: str, segmentation_tag: str, sep: str):
+        super().__init__(id=id, word=word)
         self.morphs    = tuple(segmentation_tag.split(sep))
         self.morphemes = tuple(decomposition_tag.split(sep))
 

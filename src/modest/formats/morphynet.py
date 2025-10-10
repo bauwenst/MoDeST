@@ -10,8 +10,9 @@ class MorphyNetInflection(WordDecompositionWithLexicalForm):
         désengager	désengageraient	V|COND;3;PL	désengager|eraient
     """
 
-    def __init__(self, word: str, raw_morpheme_sequence: str, lemma: str, lexical_tag: str):
+    def __init__(self, id: int, word: str, raw_morpheme_sequence: str, lemma: str, lexical_tag: str):
         super().__init__(
+            id=id,
             word=word,
             lemma=lemma,
             tag=lexical_tag
@@ -29,7 +30,7 @@ class MorphyNetDerivation(WordDecomposition):
     #       it into ( (Wiederverwendbar)[A], (keit)[.A|N] )[N] which lies in between
     #       the tag of the lexical form and having no tag.
 
-    def __init__(self, word: str, base: str, affix: str, prefix_not_suffix: bool):
+    def __init__(self, id: int, word: str, base: str, affix: str, prefix_not_suffix: bool):
         """
         MorphyNet's derivational decompositions have a strange loss of information
         where they give the affix and ONE OF the other morphemes, but not always all
@@ -43,7 +44,7 @@ class MorphyNetDerivation(WordDecomposition):
         words. (E.g.: Wiederverwendbarkeit is in German MorphyNet derivations but
         not inflections.)
         """
-        super().__init__(word=word)
+        super().__init__(id=id, word=word)
 
         if base[0] == "-":
             base = base[1:]
