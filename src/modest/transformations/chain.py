@@ -1,31 +1,28 @@
-from typing import TypeVar, List, Iterator, Self
+from typing import List, Any
 from pathlib import Path
 
-from tktkt.util.iterables import allEqual
+from tktkt.util.iterables import allEqual, cat
 
-from ..interfaces.datasets import ModestDataset
+from ..interfaces.datasets import ModestDataset, Languageish, M
+from ..interfaces.kernels import ModestKernel
 
 
-T = TypeVar("T")
+class ChainedModestDatasets(ModestDataset[M]):
 
-class ChainedModestDatasets(ModestDataset[T]):
-
-    def __init__(self, datasets: List[ModestDataset[T]]):
+    def __init__(self, datasets: List[ModestDataset[M]]):
         assert datasets
-        assert allEqual(dataset._language for dataset in datasets)
-        super().__init__("+".join(dataset._name for dataset in datasets), datasets[0]._language)
-
+        assert allEqual(dataset.getLanguage() for dataset in datasets)
         self._datasets = datasets
+        super().__init__()
 
-    def _get(self) -> List[Path]:
-        return [d._get() for d in self._datasets]
+    def getCollectionName(self) -> str:
+        return "+".join(dataset.getCollectionName() for dataset in self._datasets)
 
-    def _generate(self, path: List[Path]) -> Iterator[T]:
-        for d in self._datasets:
-            yield from d.generate()
+    def _getLanguage(self) -> Languageish:
+        return self._datasets[0].getLanguage()
 
-    def generate(self) -> Iterator[T]:
-        yield from self._generate(self._get())
+    def _kernels(self) -> list[ModestKernel[Any,M]]:
+        return list(cat(dataset._kernels() for dataset in self._datasets))
 
-    def rerouted(self, path: Path) -> Self:
-        raise NotImplementedError
+    def _files(self) -> List[Path]:
+        return list(cat(dataset._files() for dataset in self._datasets))
