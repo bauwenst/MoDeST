@@ -72,7 +72,11 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
             driver.implicitly_wait(3)  # Waiting time in case an element isn't found (WebCelex is slow...).
 
             # Entry page to select language
-            driver.get("http://celex.mpi.nl/scripts/entry.pl")
+            try:
+                driver.get("http://celex.mpi.nl/scripts/entry.pl")
+            except Exception as e:
+                print("Oh oh! It seems that CELEX is dead :(")
+                raise e
             driver.find_element(by=By.LINK_TEXT, value=f"{full_name} Lemmas").click()
 
             # Select column
@@ -132,7 +136,7 @@ class _CelexKernel(ModestKernel[tuple[str,str],CelexLemmaMorphology]):
         self._legacy = legacy
 
     def _generateRaw(self, path: Path):
-        yield from enumerate(iterateTsv(path, verbose=self._verbose))
+        yield from iterateTsv(path, verbose=self._verbose)
 
     def _parseRaw(self, raw: tuple[str,str], id: int):
         """
@@ -147,5 +151,5 @@ class _CelexKernel(ModestKernel[tuple[str,str],CelexLemmaMorphology]):
         else:
             raise
 
-    def _createWriter(self, path: Path):
+    def _createWriter(self):
         raise NotImplementedError()

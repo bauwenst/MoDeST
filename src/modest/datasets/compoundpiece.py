@@ -75,8 +75,15 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
         L("Yoruba"): "yo"
     }
 
+    def __init__(self, language: Languageish):  # If you ever add these as separate datasets to be imported, this constructor probably needs to be removed.
+        super().__init__()
+        self._lang = language
+
     def getCollectionName(self) -> str:
         return "CompoundPiece"
+
+    def _getLanguage(self) -> Languageish:
+        return self._lang
 
     def _kernels(self) -> list[ModestKernel[Any,M]]:
         return [_CompoundPieceKernel()]
@@ -99,7 +106,7 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
 class _CompoundPieceKernel(ModestKernel[tuple[str,str,str],TrivialDecomposition]):
 
     def _generateRaw(self, path: Path):
-        yield from enumerate(iterateTsv(path))
+        yield from iterateTsv(path)
 
     def _parseRaw(self, raw, id: int):
         word, decomposition, segmentation = raw
@@ -111,5 +118,5 @@ class _CompoundPieceKernel(ModestKernel[tuple[str,str,str],TrivialDecomposition]
             sep="-"
         )
 
-    def _createWriter(self, path: Path):
+    def _createWriter(self):
         raise NotImplementedError()

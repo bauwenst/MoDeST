@@ -58,7 +58,7 @@ class _MorphoChallengeKernel(ModestKernel[str, MorphoChallenge2010Morphology]):
 
     def _generateRaw(self, path: Path) -> Iterator[tuple[int,str]]:
         with open(path, "r", encoding="windows-1252") as handle:
-            yield from enumerate(iterateHandle(handle, verbose=self._verbose))
+            yield from iterateHandle(handle, verbose=self._verbose)
 
     def _parseRaw(self, raw: str, id: int) -> MorphoChallenge2010Morphology:
         lemma, tag = raw.split("\t")
@@ -73,5 +73,5 @@ class _MorphoChallengeKernel(ModestKernel[str, MorphoChallenge2010Morphology]):
             logger.info(f"Failed to parse morphology: '{lemma}' tagged as '{tag}'")
             raise RuntimeError()
 
-    def _createWriter(self, path: Path):
+    def _createWriter(self):
         raise NotImplementedError()

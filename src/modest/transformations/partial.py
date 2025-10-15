@@ -1,7 +1,7 @@
 """
 Selects only one/some of the splits in each example of a dataset.
 """
-from typing import Iterator, Generic, TypeVar
+from typing import Iterator, Generic, TypeVar, Any
 from pathlib import Path
 from abc import abstractmethod
 
@@ -13,7 +13,7 @@ from ..interfaces.morphologies import WordSegmentation
 class SingleSplitSegmentation(WordSegmentation):
 
     def __init__(self, nested: WordSegmentation, last_not_first: bool):
-        super().__init__(nested.word)
+        super().__init__(nested._id, nested.word)
         self._nested = nested
         self._last_not_first = last_not_first
 
@@ -34,7 +34,7 @@ class SingleSplitSegmentation(WordSegmentation):
 class AllButFirstSplitSegmentation(WordSegmentation):
 
     def __init__(self, nested: WordSegmentation):
-        super().__init__(nested.word)
+        super().__init__(nested._id, nested.word)
         self._nested = nested
 
     def segment(self) -> tuple[str, ...]:
@@ -62,6 +62,9 @@ class _ConvertedSegmentationsDataset(ModestDataset[M2], Generic[M,M2]):
 
     def _getLanguage(self) -> Languageish:
         return self._nested_dataset._getLanguage()
+
+    def _kernels(self) -> list[ModestKernel[Any,M]]:
+        return self._nested_dataset._kernels()
 
     def _files(self) -> list[Path]:
         return self._nested_dataset._files()

@@ -24,12 +24,15 @@ class ModestKernel(Generic[Raw,M], ABC):
     # Reading
 
     @abstractmethod
-    def _generateRaw(self, path: Path) -> Iterator[tuple[int,Raw]]:
+    def _generateRaw(self, path: Path) -> Iterator[Raw]:
         """
         Extracts information to be parsed for each example.
         If the path is required to be a folder, it is assumed that this function can find its way in that folder.
         """
         pass
+
+    def generateRaw(self, path: Path) -> Iterator[tuple[int, Raw]]:
+        yield from enumerate(self._generateRaw(path))
 
     @abstractmethod
     def _parseRaw(self, raw: Raw, id: int) -> M:
@@ -38,8 +41,8 @@ class ModestKernel(Generic[Raw,M], ABC):
         """
         pass
 
-    def _generateObjects(self, path: Path) -> Iterator[M]:
-        for i, raw in self._generateRaw(path):
+    def generateObjects(self, path: Path) -> Iterator[M]:
+        for i, raw in self.generateRaw(path):
             try:
                 yield self._parseRaw(raw, i)
             except:
@@ -48,67 +51,67 @@ class ModestKernel(Generic[Raw,M], ABC):
     # Writing
 
     @abstractmethod
-    def _createWriter(self, path: Path) -> "Writer[Raw]":
+    def _createWriter(self) -> "Writer[Raw]":
         """
         Implement if you want to support writing. Otherwise, raise NotImplementedError.
         """
         pass
 
-    def _writeObjects(self, objects: Iterator[M], in_path: Path, out_path: Path):
-        with self._createWriter(out_path) as writer:
-            raws = self._generateRaw(in_path)
-            for obj in objects:
-                found_raw = False
-                looked_everywhere = False
-                while not found_raw:
-                    for i, raw in raws:
-                        if i == obj._id:  # This raw is the raw belonging to the object.
-                            writer.write(raw)
-                            found_raw = True
-                            break
+    def writeObjects(self, objects: Iterator[M], in_path: Path, out_path: Path):
+        write_stream = self._createWriter().openStream(out_path)
+        read_stream = self._generateRaw(in_path)
+        for obj in objects:
+            found_raw = False
+            looked_everywhere = False
+            while not found_raw:
+                for i, raw in read_stream:
+                    if i == obj._id:  # This raw is the raw belonging to the object.
+                        write_stream.send(raw)
+                        found_raw = True
+                        break
+                else:
+                    if looked_everywhere:
+                        raise RuntimeError(f"Cannot find object id {obj._id} in the raw examples generate by the {self.__class__.__name__} kernel.")
                     else:
-                        if looked_everywhere:
-                            raise RuntimeError(f"Cannot find object id {obj._id} in the raw examples generate by the {self._kernel.__class__.__name__} kernel.")
-                        else:
-                            raws = self._generateRaw(in_path)
-                            looked_everywhere = True
+                        read_stream = self._generateRaw(in_path)
+                        looked_everywhere = True
+        write_stream.close()
 
 
 class Writer(Generic[Raw], ABC):
     """
-    Manages all writes of raw versions of morphological objects to a file or folder,
-    using Python's 'with' context manager.
+    Manages all writes of raw versions of morphological objects to a file or folder.
+    The output path is only known after construction.
 
-    An alternative way to implement this would be to have a single method
-        def openStream(out_path: Path) -> Generator[None, Raw, None]:
-            ...
-    which would handle its own setup (rather than having to implement an __enter__ and __exit__)
-    and would have to use a line like 'next_example = yield' which would receive examples from .send().
-    So then as the user, rather than
+    There are two ways to implement this:
+        1. Using Python's 'with' context manager.
+        2. With a generator coroutine, i.e. a single method
+            def openStream(out_path: Path) -> Generator[None, Raw, None]:
+                ...
+        which handles its own setup (rather than having to implement an __enter__ and __exit__)
+        and has to use a line like 'next_example = yield' which receives examples from .send().
+
+    The first is difficult to implement but easy to use:
 
         with Writer(out_path) as writer:
             for raw in iterator:
                 writer.write(raw)
 
-    you would have
+    The second is easy to implement but difficult to use (i.e. you need to know more):
 
         stream = Writer().openStream(out_path)
         for raw in iterator:
             stream.send(raw)
         stream.close()
+
+    But since we are the user and we hide this usage below caching methods, I will go for the easier implementation.
     """
 
-    def __init__(self, path: Path):
-        self._out_path = path
-
     @abstractmethod
-    def __enter__(self) -> Self:
+    def _createStream(self, out_path: Path) -> Generator[None, Raw, None]:
         pass
 
-    @abstractmethod
-    def write(self, raw: Raw):
-        pass
-
-    @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def openStream(self, out_path: Path) -> Generator[None, Raw, None]:
+        stream = self._createStream(out_path)
+        stream.send(None)
+        return stream

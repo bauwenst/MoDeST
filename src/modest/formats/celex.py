@@ -88,7 +88,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
         return "\n|\t".join(lines)
 
     def toForest(self, do_full_morphemes=False, indent=0):
-        s = "[" + (self.morphemetext if do_full_morphemes else self.morphtext) + r" (\textsc{" + self.pos[1:-1].lower().replace("|", "$\leftarrow$") + "})"
+        s = "[" + (self.morphemetext if do_full_morphemes else self.morphtext) + r" (\textsc{" + self.pos[1:-1].lower().replace("|", r"$\leftarrow$") + "})"
         if self.children is not None:
             s += "\n"
             for child in self.children:

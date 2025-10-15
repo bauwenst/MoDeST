@@ -1,3 +1,21 @@
+"""
+The hierarchies in this module have a fundamental problem, which is the following: a morphological object has several
+dimensions of expressivity, in particular the dimension of how much metadata there is (just the word, word and lemma,
+word and lemma and tag) and which segmentations it has (segmentation, decomposition, free morphs, ...). These combine
+both within and across each other: you can have a (word, lemma) with (segmentation) or a (word) with (segmentation, decomposition)
+and so on. The problem is that Python has no intersection types, and a subclass of two properties is NOT the intersection
+type of those two properties. E.g.:
+    class X(A,B):
+        ...
+    class Y(B,C):
+        ...
+    class Z(A,B,C):
+        ...
+Here, X is not the intersection of A and B because Z is not an X. But when we write
+    class Z(X,C):
+        ...
+it is impossible to express that we want Z to be a Y.
+"""
 from typing import Tuple
 from abc import abstractmethod, ABC
 
@@ -5,9 +23,43 @@ from ..algorithms.alignment import alignMorphemes_Viterbi
 
 
 class _IdentifiedWord:
-    def __init__(self, id: int, word: str):
-        self._id = id
-        self.word = word  # Also called the "surface form" a.o.t. the "lexical form" which is (lemma, tag). https://en.wikipedia.org/wiki/Morphological_dictionary
+
+    @property
+    @abstractmethod
+    def _id(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def word(self) -> str:  # Also called the "surface form" a.o.t. the "lexical form" which is (lemma, tag). https://en.wikipedia.org/wiki/Morphological_dictionary
+        pass
+
+
+class _AddLemma:
+    """
+    For datasets that contain at least
+         word: reconstituées
+        lemma: reconstituer
+    """
+
+    @property
+    @abstractmethod
+    def lemma(self) -> str:
+        pass
+
+
+class _AddLexicalForm(_AddLemma):
+    """
+    For datasets that contain at least
+         word: reconstituées
+        lemma: reconstituer
+          tag: V|V.PTCP;PST|FEM|PL
+    """
+
+    @property
+    @abstractmethod
+    def tag(self) -> str:
+        pass
 
 
 class _AddSegmentation(ABC):
@@ -16,65 +68,56 @@ class _AddSegmentation(ABC):
         pass
 
 
-class WordSegmentation(_IdentifiedWord, _AddSegmentation):
-    """
-    For datasets that contain at least
-        segmentation: meta/stas/ize
-    """
-    pass
-
-
 class _AddDecomposition(ABC):
     @abstractmethod
     def decompose(self) -> Tuple[str, ...]:
         pass
 
 
-class WordDecomposition(WordSegmentation, _AddDecomposition):  # All decompositions should be able to be segmented.
+class WordSegmentation(_IdentifiedWord, _AddSegmentation):
     """
     For datasets that contain at least
-                 word: metastasize
-        decomposition: meta stasis ize
+        segmentation: meta/stas/ize
     """
+    def __init__(self, id: int, word: str):
+        self.__id = id
+        self._word = word
 
-    def segment(self) -> Tuple[str, ...]:
-        return tuple(alignMorphemes_Viterbi(self.word, self.decompose())[0].split(" "))
+    @property
+    def _id(self) -> int:
+        return self.__id
+
+    @property
+    def word(self) -> str:
+        return self._word
 
 
-class _IdentifiedLexicalForm(_IdentifiedWord):
-    """
-    For datasets that contain at least
-         word: reconstituées
-        lemma: reconstituer
-          tag: V|V.PTCP;PST|FEM|PL
-    """
+class WordSegmentationWithLemma(WordSegmentation, _AddLemma):
 
-    def __init__(self, id: int, word: str, lemma: str, tag: str):
+    def __init__(self, id: int, word: str, lemma: str):
         super().__init__(id, word)
-        self.lemma = lemma
-        self.tag   = tag
+        self._lemma = lemma
+
+    @property
+    def lemma(self) -> str:
+        return self._lemma
 
 
-class WordSegmentationWithLexicalForm(_IdentifiedLexicalForm, WordSegmentation):
+class WordSegmentationWithLexicalForm(WordSegmentationWithLemma, _AddLexicalForm):
     """
     For datasets that contain at least
         segmentation: reconstitu|é|e|s
                lemma: reconstituer
                  tag: V|V.PTCP;PST|FEM|PL
     """
-    pass
 
+    def __init__(self, id: int, word: str, lemma: str, tag: str):
+        super().__init__(id, word, lemma)
+        self._tag = tag
 
-class WordDecompositionWithLexicalForm(WordSegmentationWithLexicalForm, _AddDecomposition):  # TODO: The one downside of this kind of inheritance is that this class is not a subclass of WordDecomposition.
-    """
-    For datasets that contain at least
-                 word: reconstituées
-        decomposition: reconstituer|é|e|s
-                lemma: reconstituer
-                  tag: V|V.PTCP;PST|FEM|PL
-
-    """
-    pass
+    @property
+    def tag(self) -> str:
+        return self._tag
 
 
 class WordSegmentationWithFreeSegmentation(WordSegmentation):
@@ -93,6 +136,29 @@ class WordSegmentationWithFreeSegmentation(WordSegmentation):
     @abstractmethod
     def segmentFree(self) -> Tuple[str, ...]:
         pass
+
+
+class WordDecomposition(WordSegmentation, _AddDecomposition):  # All decompositions should be able to be segmented.
+    """
+    For datasets that contain at least
+                 word: metastasize
+        decomposition: meta stasis ize
+    """
+
+    def segment(self) -> Tuple[str, ...]:
+        return tuple(alignMorphemes_Viterbi(self.word, self.decompose())[0].split(" "))
+
+
+class WordDecompositionWithLexicalForm(WordSegmentationWithLexicalForm, _AddDecomposition):  # TODO: The one downside of this kind of inheritance is that this class is not a subclass of WordDecomposition.
+    """
+    For datasets that contain at least
+                 word: reconstituées
+        decomposition: reconstituer|é|e|s
+                lemma: reconstituer
+                  tag: V|V.PTCP;PST|FEM|PL
+
+    """
+    pass
 
 
 class WordDecompositionWithFreeSegmentation(WordDecomposition):

@@ -22,13 +22,12 @@ Languageish = Union[Language, str]
 M = TypeVar("M", bound=WordSegmentation)
 class ModestDataset(ABC, Generic[M]):
     """
-    TODO: update this now that Kernels exist
     The responsibilities of this class's descendants are
-        1. Knowing how to talk to the external source that carries the data;
-        2. Reading those data once they have been pulled and transforming the raw data into the relevant constructor arguments.
+        1. Knowing how to talk to the external source that carries the data (._get());
+        2. Knowing which classes can parse those data (._kernels()).
 
-    Additionally, because the only user-facing method is .generate() which the subclasses don't implement, you have to
-    communicate the type of the objects it generates via a different route, namely with a generic type variable: when
+    Additionally, because the only user-facing method that has nothing to do with metadata is .generate() and the
+    subclasses don't implement this, you have to communicate the type of the objects it generates via a generic type variable: when
     you extend this abstract class, do it like `class ActualDataset(ModestDataset[TypeOfTheGeneratedObjects]): ...` with
     square brackets inside the inheritance parentheses.
     """
@@ -70,7 +69,7 @@ class ModestDataset(ABC, Generic[M]):
         paths   = self._files() if not self._rerouted else self._rerouted
         assert len(kernels) == len(paths), f"Got {len(kernels)} kernels but {len(paths)} paths." + bool(self._rerouted)*" Note that this dataset was rerouted."
         for kernel, path in zip(kernels,paths):
-            yield from kernel._generateObjects(path)
+            yield from kernel.generateObjects(path)
 
     def getLanguage(self) -> Language:
         return L(self._getLanguage())
@@ -78,6 +77,9 @@ class ModestDataset(ABC, Generic[M]):
     def identifier(self) -> str:
         """A unique name for the dataset."""
         return self.getCollectionName() + "_" + self.getLanguage().language_name()
+
+    def location(self) -> str:
+        return self._getCachePath().as_uri()
 
     def card(self) -> DatasetCard:
         """A summary of the dataset."""

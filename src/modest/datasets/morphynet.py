@@ -112,12 +112,12 @@ class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetI
         self._skip_if_unknown = skip_if_unknown
 
     def _generateRaw(self, path: Path):
-        yield from enumerate(iterateTsv(path, verbose=self._verbose))
+        yield from iterateTsv(path, verbose=self._verbose)
 
     def _parseRaw(self, raw, id: int):
         raise NotImplementedError()  # We don't implement example-per-example parsing because they depend on each other.
 
-    def _generateObjects(self, path: Path):
+    def generateObjects(self, path: Path):
         prev = None
         seen = set()
 
@@ -231,7 +231,7 @@ class _MorphyNetKernel_Derivation(ModestKernel[tuple[str,str,str,str,str,str],Mo
         self._verbose = verbose
 
     def _generateRaw(self, path: Path):
-        yield from enumerate(iterateTsv(path, verbose=self._verbose))
+        yield from iterateTsv(path, verbose=self._verbose)
 
     def _parseRaw(self, raw, id: int):
         original, result, original_pos, result_pos, affix, affix_type = raw
@@ -243,5 +243,5 @@ class _MorphyNetKernel_Derivation(ModestKernel[tuple[str,str,str,str,str,str],Mo
             prefix_not_suffix=(affix_type == "prefix")
         )
 
-    def _createWriter(self, path: Path):
+    def _createWriter(self):
         raise NotImplementedError()
