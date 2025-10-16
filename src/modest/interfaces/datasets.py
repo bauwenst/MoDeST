@@ -76,7 +76,7 @@ class ModestDataset(ABC, Generic[M]):
 
     def identifier(self) -> str:
         """A unique name for the dataset."""
-        return self.getCollectionName() + "_" + self.getLanguage().language_name()
+        return self.getLanguage().language_name() + "_" + self.getCollectionName()
 
     def location(self) -> str:
         return self._getCachePath().as_uri()
