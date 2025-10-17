@@ -34,6 +34,9 @@ class _IdentifiedWord:
     def word(self) -> str:  # Also called the "surface form" a.o.t. the "lexical form" which is (lemma, tag). https://en.wikipedia.org/wiki/Morphological_dictionary
         pass
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({repr(self.word)})"
+
 
 class _AddLemma:
     """
