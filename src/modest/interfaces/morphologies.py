@@ -71,10 +71,13 @@ class _AddSegmentation(ABC):
         pass
 
 
-class _AddDecomposition(ABC):
+class _AddDecomposition(_AddSegmentation):
     @abstractmethod
     def decompose(self) -> Tuple[str, ...]:
         pass
+
+    def segment(self) -> Tuple[str, ...]:
+        return tuple(alignMorphemes_Viterbi(self.word, self.decompose())[0].split(" "))
 
 
 class WordSegmentation(_IdentifiedWord, _AddSegmentation):
@@ -147,9 +150,7 @@ class WordDecomposition(WordSegmentation, _AddDecomposition):  # All decompositi
                  word: metastasize
         decomposition: meta stasis ize
     """
-
-    def segment(self) -> Tuple[str, ...]:
-        return tuple(alignMorphemes_Viterbi(self.word, self.decompose())[0].split(" "))
+    pass
 
 
 class WordDecompositionWithLexicalForm(WordSegmentationWithLexicalForm, _AddDecomposition):  # TODO: The one downside of this kind of inheritance is that this class is not a subclass of WordDecomposition.

@@ -15,7 +15,7 @@ class Russian_MorphyNet_Inflections(MorphyNetDataset_Inflection):
     def _getLanguage(self) -> Languageish:
         return "Russian"
 
-    def _files(self) -> Path:
+    def _files(self) -> list[Path]:
         morphynet_code = MORPHYNET_LANGUAGES.get(self.getLanguage())
         cache_path = self._getCachePath() / f"{morphynet_code}.{self.getSubset().toString()}.v1.tsv"
         if not cache_path.exists():
@@ -34,7 +34,7 @@ class Russian_MorphyNet_Inflections(MorphyNetDataset_Inflection):
             zip_path.unlink()
             assert cache_path.exists()
 
-        return cache_path
+        return [cache_path]
 
     def _getRemoteFilename(self, langcode: str, subset: MorphynetSubset) -> str:
         return "rus.inflectional.v1.zip"

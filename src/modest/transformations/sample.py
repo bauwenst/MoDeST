@@ -26,7 +26,9 @@ class _ReducedModestDataset(ModestDataset[M]):
         pass
 
     def _getCachePath(self) -> Path:  # Not the same as the usual implementation of the cache path.
-        return self._nested._getCachePath() / self._getModificationName()
+        folder = self._nested._getCachePath() / self._getModificationName()
+        folder.mkdir(exist_ok=True)
+        return folder
 
     def _getLanguage(self) -> Languageish:
         return self._nested._getLanguage()
@@ -111,14 +113,13 @@ class TruncateModestDataset(_ElementwiseFilteredModestDataset[M]):
 class DropoutModestDataset(_ElementwiseFilteredModestDataset[M]):
 
     def __init__(self, nested: ModestDataset[M], desired_size: int, seed: int=0, do_cache: bool=True):
-        if isinstance(nested, ChainedModestDatasets):  # TODO: This will be fixed after a redesign.
-            nested = nested._datasets[0]
-
         super().__init__(nested=nested, do_cache=do_cache)
 
         self._size    = desired_size
         self._P_admit = min(1.0, desired_size / nested.card().size)  # Admit old examples with this probability.
         self._seed    = seed
+
+        self._so_far  = 0
         self._rng     = npr.default_rng(seed=self._seed)
         assert self._P_admit <= 1
 
@@ -126,13 +127,16 @@ class DropoutModestDataset(_ElementwiseFilteredModestDataset[M]):
         return f"dropout-{self._size}_{self._seed}"
 
     def _resetFilter(self):
-        self._rng = npr.default_rng(seed=self._seed)
+        self._so_far = 0
+        self._rng    = npr.default_rng(seed=self._seed)
 
     def _keep(self, item: M) -> bool:
-        return self._rng.random() < self._P_admit
+        keep = self._rng.random() < self._P_admit
+        self._so_far += keep
+        return keep
 
     def _stop(self, item: M) -> bool:
-        return False
+        return self._so_far >= self._size
 
 
 T = TypeVar("T", bound=WordSegmentationWithLemma)
@@ -143,10 +147,11 @@ class SampleLexemes(_ReducedModestDataset[T]):
     then samples N of them at random, and then samples one segmentation from each of them.
     """
 
-    def __init__(self, n_lexemes: int, nested: ModestDataset[T], seed: int=0, do_cache: bool=True):
+    def __init__(self, nested: ModestDataset[T], n_lexemes: int, n_per_lexeme: int=1, seed: int=0, do_cache: bool=True):
         super().__init__(nested=nested, do_cache=do_cache)
         self._seed = seed
-        self._n_lexemes = n_lexemes
+        self._n_lexemes    = n_lexemes
+        self._n_per_lexeme = n_per_lexeme
 
     def _filter(self, iterator: Iterator[M]) -> Iterator[M]:  # You can't filter across kernels because when you write the cache, the IDs in the filter stream are cross-referenced with a per-kernel stream of raw examples.
         rng = npr.default_rng(seed=self._seed)
@@ -166,7 +171,10 @@ class SampleLexemes(_ReducedModestDataset[T]):
         # Step 2: Choose lemmas and sample from their lexemes.
         for lemma_id in rng.choice(len(lemma_id_to_object_ids), size=self._n_lexemes, replace=False):
             ids_in_lexeme = lemma_id_to_object_ids[lemma_id]
-            yield id_to_object[rng.choice(ids_in_lexeme)]
+            if len(ids_in_lexeme) > self._n_per_lexeme:
+                ids_in_lexeme = rng.choice(ids_in_lexeme, size=self._n_per_lexeme, replace=False)
+            for id in ids_in_lexeme:
+                yield id_to_object[id]
 
         # # Step 3: Sample from lexemes. Assumption: all word forms of the same lexeme are grouped together in the dataset.
         # current_lemma  = None

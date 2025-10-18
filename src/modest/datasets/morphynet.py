@@ -16,7 +16,8 @@ from logging import getLogger
 from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
 from ..formats.tsv import iterateTsv
 from ..interfaces.datasets import ModestDataset, M
-from ..interfaces.kernels import ModestKernel, Raw
+from ..interfaces.kernels import ModestKernel, Raw, Writer
+from ..transformations.precompute import TsvWriter
 
 logger = getLogger(__name__)
 
@@ -114,6 +115,9 @@ class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetI
     def _generateRaw(self, path: Path):
         yield from iterateTsv(path, verbose=self._verbose)
 
+    def _createWriter(self):
+        return TsvWriter()
+
     def _parseRaw(self, raw, id: int):
         raise NotImplementedError()  # We don't implement example-per-example parsing because they depend on each other.
 
@@ -121,7 +125,7 @@ class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetI
         prev = None
         seen = set()
 
-        for id, parts in self._generateRaw(path):
+        for id, parts in self.generateRaw(path):
             try:
                 lemma, word, tag, decomposition = parts
                 word = word.split(" ")[-1]
@@ -233,6 +237,9 @@ class _MorphyNetKernel_Derivation(ModestKernel[tuple[str,str,str,str,str,str],Mo
     def _generateRaw(self, path: Path):
         yield from iterateTsv(path, verbose=self._verbose)
 
+    def _createWriter(self):
+        return TsvWriter()
+
     def _parseRaw(self, raw, id: int):
         original, result, original_pos, result_pos, affix, affix_type = raw
         return MorphyNetDerivation(
@@ -242,6 +249,3 @@ class _MorphyNetKernel_Derivation(ModestKernel[tuple[str,str,str,str,str,str],Mo
             affix=affix,
             prefix_not_suffix=(affix_type == "prefix")
         )
-
-    def _createWriter(self):
-        raise NotImplementedError()

@@ -59,7 +59,7 @@ class ModestKernel(Generic[Raw,M], ABC):
 
     def writeObjects(self, objects: Iterator[M], in_path: Path, out_path: Path):
         write_stream = self._createWriter().openStream(out_path)
-        read_stream = self._generateRaw(in_path)
+        read_stream = self.generateRaw(in_path)
         for obj in objects:
             found_raw = False
             looked_everywhere = False
@@ -73,7 +73,7 @@ class ModestKernel(Generic[Raw,M], ABC):
                     if looked_everywhere:
                         raise RuntimeError(f"Cannot find object id {obj._id} in the raw examples generate by the {self.__class__.__name__} kernel.")
                     else:
-                        read_stream = self._generateRaw(in_path)
+                        read_stream = self.generateRaw(in_path)
                         looked_everywhere = True
         write_stream.close()
 
