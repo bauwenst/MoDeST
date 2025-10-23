@@ -93,11 +93,25 @@ class MorphyNetDataset(ModestDataset[M]):
 
 
 class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
+    """
+    For MorphyNet inflections. Note that these do not necessarily give a full morphological decomposition: they only give
+    an inflectional decomposition. For example, in the German dataset, "Weltwirtschaft" ("global economy") is said to have
+    no decomposition despite clearly consisting of "Welt/wirt/schaft".
+    """
 
-    def __init__(self, verbose: bool=False, skip_if_unknown: bool=False):
+    def __init__(self, verbose: bool=False, skip_if_unknown: bool=False, skip_if_unimputable: bool=False):
+        """
+        :param skip_if_unknown: Whether to discard the entries that have no decomposition given by MorphyNet, which includes
+                                e.g. masculine singular adjectives, infinitives, uninflected nouns, ...
+                                If True, you will lose a lot of
+        :param skip_if_unimputable: Whether to discard the entries that have no decomposition but only if they can't be
+                                    imputed. If True, you will lose e.g. adjectives whose masculine and feminine are equal,
+                                    nouns that are not inflected, and so in general, monomorphemic words (at least inflectionally).
+        """
         super().__init__()
         self._verbose = verbose
         self._skip_if_unknown = skip_if_unknown
+        self._skip_if_unimputable = skip_if_unimputable
 
     def getSubset(self) -> MorphynetSubset:
         return MorphynetSubset.INFLECTIONAL
@@ -108,9 +122,10 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
 
 class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetInflection]):
 
-    def __init__(self, verbose: bool, skip_if_unknown: bool):
+    def __init__(self, verbose: bool, skip_if_unknown: bool, skip_if_unimputable: bool):
         self._verbose = verbose
         self._skip_if_unknown = skip_if_unknown
+        self._skip_if_unimputable = skip_if_unimputable
 
     def _generateRaw(self, path: Path):
         yield from iterateTsv(path, verbose=self._verbose)
@@ -136,12 +151,6 @@ class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetI
                 logger.info(f"Bad MorphyNet line: {line if line else '(empty)'}")
                 continue
 
-            # There are duplicate decompositions in MorphyNet (either with a different tag, or literally just duplicate entries in the dataset).
-            compressed = (hash(decomposition), lemma[0:3])  # lemma reduces the possibility of collisions to basically 0.
-            if compressed in seen:
-                continue
-            seen.add(compressed)
-
             curr = MorphyNetInflection(
                 id=id,
                 word=word,
@@ -149,44 +158,54 @@ class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetI
                 lemma=lemma,
                 lexical_tag=tag
             )
-            if curr.word.startswith("no "):  # Skip this while keeping the previous object ready.
-                continue
+            # if word.startswith("no "):  # Skip this while keeping the previous object ready.
+            #     continue
 
-            # If this is the first good word, put it in the chamber for now.
+            # If this is the first entry, put it in the chamber for now.
             if prev is None:
                 prev = curr
                 continue
 
             # Impute the previous decomp if it doesn't exist.
-            if prev.decompose() == tuple("-"):
-                if not self._skip_if_unknown:
+            discard_prev = False
+            if prev.decompose() == ("-",):
+                if self._skip_if_unknown:
+                    discard_prev = True
+                else:
                     try:
                         logger.info(f"Last word '{prev.word}' had no morphemes. Will be imputed by looking forwards at {curr.word} -> {curr.morphemes}")
                         self._imputeMorphemes(with_known_morphemes=curr, with_unknown_morphemes=prev)
-                        logger.info(f"\t{prev.morphemes}")
+                        logger.info(f"\tFound: {prev.morphemes}")
                     except:
-                        logger.info(f"\tFAILED; {prev.word} removed from dataset.")
-                        prev = curr
-                        continue
+                        if self._skip_if_unimputable:
+                            discard_prev = True
+                            logger.info(f"\tFailed. {prev.word} removed from dataset.")
+                        else:  # We embrace the fact that there is no decomposition and assume that
+                            prev.morphemes = (prev.word,)
+                            logger.info(f"\tFailed. Let's assume it is just one big morpheme.")
+            elif curr.decompose() == ("-",):  # The fact that this is in an 'else' implies that prev has morphemes, which means even when this branch does nothing, you can output it.
+                if self._skip_if_unknown:
+                    pass  # Don't try to impute, and you'll default to the first block above in the next iteration.
                 else:
-                    prev = curr
-                    continue
-            elif curr.decompose() == tuple("-"):  # The fact that this is in an 'else' implies that prev has morphemes, which means even when this branch does nothing, you can output it.
-                if not self._skip_if_unknown:
                     try:
                         logger.info(f"Current word '{curr.word}' has no morphemes, but the previous word did. Will be imputed by looking backwards at {prev.word} -> {prev.morphemes}")
                         self._imputeMorphemes(with_known_morphemes=prev, with_unknown_morphemes=curr)
                         logger.info(f"\t{curr.morphemes}")
                     except:
                         logger.info(f"\tFAILED; trying again soon.")
-                        # Still output prev.
+
+            if not discard_prev:
+                # There are duplicate decompositions in MorphyNet (either with a different tag, or literally just duplicate entries in the dataset).
+                fingerprint = (hash(decomposition), hash(lemma))  # In case DIFFERENT decompositions (e.g. a|b|c and e|f|g) have the same hash (highly, highly unlikely), we use the lemma's hash to figure out that actually these hashes came from different strings.
+                if fingerprint not in seen:
+                    seen.add(fingerprint)
+                    yield prev
 
             # Output
-            yield prev
             prev = curr
 
         if prev is not None:
-            yield prev
+            yield prev  # Yes, not doing a hash check means it is possible that this one decomposition has already been seen before.
 
     def _imputeMorphemes(self, with_known_morphemes: MorphyNetInflection, with_unknown_morphemes: MorphyNetInflection):
         known_morphemes = with_known_morphemes.decompose()

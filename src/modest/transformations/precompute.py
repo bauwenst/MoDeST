@@ -39,8 +39,7 @@ class _ModestDatasetPrecomputedBase(ModestDataset[M], Generic[Nested,M]):
         return [self._kernel()]
 
     def _files(self) -> list[Path]:
-        folder = PathManagement.namelessCache()
-        cache_file = folder / f"precomputed_{self.identifier()}.tsv"
+        cache_file = self._getFile()
         if not cache_file.exists():
             kernel = self._kernel()
             stream = TsvWriter().openStream(cache_file)
@@ -49,6 +48,15 @@ class _ModestDatasetPrecomputedBase(ModestDataset[M], Generic[Nested,M]):
             stream.close()
 
         return [cache_file]
+
+    def _getFile(self) -> Path:
+        return PathManagement.namelessCache() / f"precomputed_{self.identifier()}.tsv"
+
+    def free(self):
+        """Removes the cache file from disk."""
+        cache_path = self._getFile()
+        if cache_path.exists():
+            cache_path.unlink()
 
 
 HasSegmentation = TypeVar("HasSegmentation", bound=WordSegmentation)

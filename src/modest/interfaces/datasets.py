@@ -62,13 +62,18 @@ class ModestDataset(ABC, Generic[M]):
     def _getLanguage(self) -> Languageish:
         pass
 
-    # Pre-implemented user-facing methods
+    # Auxiliary
 
-    def generate(self) -> Iterator[M]:
+    def _getKernelsWithFiles(self) -> Iterator[tuple[ModestKernel,Path]]:
         kernels = self._kernels()
         paths   = self._files() if not self._rerouted else self._rerouted
         assert len(kernels) == len(paths), f"Got {len(kernels)} kernels but {len(paths)} paths." + bool(self._rerouted)*" Note that this dataset was rerouted."
-        for kernel, path in zip(kernels,paths):
+        return zip(kernels, paths)
+
+    # Pre-implemented user-facing methods
+
+    def generate(self) -> Iterator[M]:
+        for kernel, path in self._getKernelsWithFiles():
             yield from kernel.generateObjects(path)
 
     def getLanguage(self) -> Language:

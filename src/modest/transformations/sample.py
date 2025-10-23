@@ -8,7 +8,6 @@ from modest.interfaces.kernels import ModestKernel
 
 from ..interfaces.datasets import ModestDataset, M, Languageish
 from ..interfaces.morphologies import WordSegmentationWithLemma
-from ..transformations.chain import ChainedModestDatasets
 
 
 class _ReducedModestDataset(ModestDataset[M]):
@@ -58,14 +57,13 @@ class _ReducedModestDataset(ModestDataset[M]):
     def _filter(self, iterator: Iterator[M]) -> Iterator[M]:
         pass
 
-    def _getGenerators(self) -> Iterator[tuple[Iterator[M], ModestKernel, Path]]:
-        for kernel, path in zip(self._kernels(), self._nested._files()):
-            yield kernel.generateObjects(path), kernel, path
-
     def _getFilteredGenerators(self) -> Iterator[tuple[Iterator[M], ModestKernel, Path]]:
+        """
+        The implementation of this method should resemble that of super().generate() as closely as possible.
+        """
         self._resetFilter()
-        for iterator, kernel, path in self._getGenerators():
-            yield self._filter(iterator), kernel, path
+        for kernel, path in zip(self._kernels(), self._nested._files()):
+            yield self._filter(kernel.generateObjects(path)), kernel, path
 
     def generate(self) -> Iterator[M]:
         if self._do_cache:  # zips the kernels and the cache paths generated above.
@@ -108,6 +106,21 @@ class TruncateModestDataset(_ElementwiseFilteredModestDataset[M]):
     def _stop(self, item: M) -> bool:
         self._so_far += 1
         return self._so_far >= self._size
+
+
+class MinimumMorphemesModestDataset(_ElementwiseFilteredModestDataset[M]):
+    def __init__(self, nested: ModestDataset[M], n_morphemes_minimum: int, do_cache: bool=True):
+        super().__init__(nested=nested, do_cache=do_cache)
+        self._n_morphemes_minimum = n_morphemes_minimum
+
+    def _resetFilter(self):
+        pass
+
+    def _keep(self, item: M):
+        return self._n_morphemes_minimum <= 1 or len(item.segment()) >= self._n_morphemes_minimum
+
+    def _stop(self, item: M) -> bool:
+        return False
 
 
 class DropoutModestDataset(_ElementwiseFilteredModestDataset[M]):

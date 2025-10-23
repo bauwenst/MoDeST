@@ -45,7 +45,7 @@ class ModestKernel(Generic[Raw,M], ABC):
         for i, raw in self.generateRaw(path):
             try:
                 yield self._parseRaw(raw, i)
-            except:
+            except Exception:  # Importantly, doesn't catch GeneratorExit.
                 logger.info(f"Unparseable example: {raw}")
 
     # Writing

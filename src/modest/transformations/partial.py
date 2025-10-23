@@ -51,11 +51,10 @@ M2 = TypeVar("M2", bound=WordSegmentation)
 
 class _ConvertedSegmentationsDataset(ModestDataset[M2], Generic[M,M2]):
 
-    def __init__(self, wrapper_name: str, nested_dataset: ModestDataset[M], n_morphs_minimum: int=1):
+    def __init__(self, wrapper_name: str, nested_dataset: ModestDataset[M]):
         super().__init__()
         self._nested_dataset = nested_dataset
         self._wrapper_name   = wrapper_name
-        self._n_morphs_min   = n_morphs_minimum
 
     def getCollectionName(self) -> str:
         return self._nested_dataset.getCollectionName() + "-" + self._wrapper_name
@@ -71,8 +70,7 @@ class _ConvertedSegmentationsDataset(ModestDataset[M2], Generic[M,M2]):
 
     def generate(self) -> Iterator[M2]:
         for segmentation in super().generate():
-            if self._n_morphs_min <= 1 or len(segmentation.segment()) >= self._n_morphs_min:
-                yield self._convertSegmentation(segmentation)
+            yield self._convertSegmentation(segmentation)
 
     @abstractmethod
     def _convertSegmentation(self, original_segmentation: M) -> M2:
