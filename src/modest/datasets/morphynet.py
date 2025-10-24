@@ -4,10 +4,10 @@ For downloading files from the MorphyNet repository on GitHub.
 URLs for MorphyNet have the following format:
     https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{lang}/{lang}.{inflectional/derivational}.v1.tsv
 """
-from enum import Enum
-from pathlib import Path
 from typing import Iterable, Any, Iterator
 from abc import abstractmethod
+from pathlib import Path
+from enum import Enum
 
 import langcodes
 import requests
@@ -16,7 +16,7 @@ from logging import getLogger
 from ..formats.morphynet import MorphyNetInflection, MorphyNetDerivation
 from ..formats.tsv import iterateTsv
 from ..interfaces.datasets import ModestDataset, M
-from ..interfaces.kernels import ModestKernel, Raw, Writer
+from ..interfaces.readers import ModestReader, Raw, Writer
 from ..transformations.precompute import TsvWriter
 
 logger = getLogger(__name__)
@@ -116,11 +116,11 @@ class MorphyNetDataset_Inflection(MorphyNetDataset[MorphyNetInflection]):
     def getSubset(self) -> MorphynetSubset:
         return MorphynetSubset.INFLECTIONAL
 
-    def _kernels(self) -> list[ModestKernel[Any,MorphyNetInflection]]:
-        return [_MorphyNetKernel_Inflection(verbose=self._verbose, skip_if_unknown=self._skip_if_unknown)]
+    def _readers(self) -> list[ModestReader[Any,MorphyNetInflection]]:
+        return [_MorphyNetReader_Inflection(verbose=self._verbose, skip_if_unknown=self._skip_if_unknown, skip_if_unimputable=self._skip_if_unimputable)]
 
 
-class _MorphyNetKernel_Inflection(ModestKernel[tuple[str,str,str,str],MorphyNetInflection]):
+class _MorphyNetReader_Inflection(ModestReader[tuple[str,str,str,str],MorphyNetInflection]):
 
     def __init__(self, verbose: bool, skip_if_unknown: bool, skip_if_unimputable: bool):
         self._verbose = verbose
@@ -244,11 +244,11 @@ class MorphyNetDataset_Derivation(MorphyNetDataset[MorphyNetDerivation]):
     def getSubset(self) -> MorphynetSubset:
         return MorphynetSubset.DERIVATIONAL
 
-    def _kernels(self) -> list[ModestKernel[Any,MorphyNetDerivation]]:
-        return [_MorphyNetKernel_Derivation(verbose=self._verbose)]
+    def _readers(self) -> list[ModestReader[Any,MorphyNetDerivation]]:
+        return [_MorphyNetReader_Derivation(verbose=self._verbose)]
 
 
-class _MorphyNetKernel_Derivation(ModestKernel[tuple[str,str,str,str,str,str],MorphyNetDerivation]):
+class _MorphyNetReader_Derivation(ModestReader[tuple[str,str,str,str,str,str],MorphyNetDerivation]):
 
     def __init__(self, verbose: bool=False):
         self._verbose = verbose

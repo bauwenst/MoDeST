@@ -4,7 +4,7 @@ from pathlib import Path
 import requests
 from logging import getLogger
 
-from ..interfaces.kernels import ModestKernel, Raw, M
+from ..interfaces.readers import ModestReader, Raw, M
 
 logger = getLogger(__name__)
 
@@ -32,8 +32,8 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
     def getCollectionName(self) -> str:
         return "MC2010"
 
-    def _kernels(self) -> list[ModestKernel[Any,MorphoChallenge2010Morphology]]:
-        return [_MorphoChallengeKernel(verbose=self._verbose, is_turkish=self.getLanguage() == L("Turkish"))]
+    def _readers(self) -> list[ModestReader[Any,MorphoChallenge2010Morphology]]:
+        return [_MorphoChallengeReader(verbose=self._verbose, is_turkish=self.getLanguage() == L("Turkish"))]
 
     def _files(self) -> list[Path]:
         code = MC_LANGUAGES.get(self.getLanguage())
@@ -50,7 +50,7 @@ class MorphoChallenge2010Dataset(ModestDataset[MorphoChallenge2010Morphology]):
         return [cache]
 
 
-class _MorphoChallengeKernel(ModestKernel[str, MorphoChallenge2010Morphology]):
+class _MorphoChallengeReader(ModestReader[str, MorphoChallenge2010Morphology]):
 
     def __init__(self, verbose: bool, is_turkish: bool):
         self._verbose = verbose

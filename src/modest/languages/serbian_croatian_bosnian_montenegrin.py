@@ -1,9 +1,8 @@
-from typing import Iterable
-from pathlib import Path
+from typing import Iterable, Iterator
 
 import re
 
-from ..interfaces.datasets import Languageish
+from ..interfaces.datasets import Languageish, M
 from ..datasets.morphynet import MorphyNetDataset_Derivation, MorphyNetDataset_Inflection, MorphyNetDerivation
 
 CYRILLIC = re.compile(r"[\u0400-\u04FF]")
@@ -17,13 +16,9 @@ class SerboCroatian_MorphyNet_Derivations(MorphyNetDataset_Derivation):
     def _getLanguage(self) -> Languageish:
         return "Serbo-Croatian"
 
-    def _generate(self, path: Path) -> Iterable[MorphyNetDerivation]:
-        for obj in super()._generate(path):
-            is_cyrillic = CYRILLIC.search(obj.word) is not None
-            if self._cyrillic and is_cyrillic:
-                yield obj
-            elif not self._cyrillic and not is_cyrillic:
-                yield obj
+    def _iterators(self) -> Iterator[Iterator[MorphyNetDerivation]]:
+        for iterator in super()._iterators():
+            yield filter(lambda obj: self._cyrillic == (CYRILLIC.search(obj.word) is not None), iterator)
 
 
 # https://github.com/kbatsuren/MorphyNet/issues/9

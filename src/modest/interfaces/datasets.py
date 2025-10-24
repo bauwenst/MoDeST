@@ -1,14 +1,15 @@
-from typing import Iterable, Iterator, TypeVar, Generic, Union, Any
+from typing import Iterable, Iterator, TypeVar, Generic, Union, Any, final
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from pathlib import Path
 from dataclasses import dataclass
 from langcodes import Language
 
-from .kernels import ModestKernel
+from .readers import ModestReader
 from ..paths import PathManagement
 from .morphologies import WordSegmentation
 from tktkt.util.types import L
+
 
 @dataclass
 class DatasetCard:
@@ -20,11 +21,12 @@ class DatasetCard:
 Languageish = Union[Language, str]
 
 M = TypeVar("M", bound=WordSegmentation)
+M2 = TypeVar("M2", bound=WordSegmentation)
 class ModestDataset(ABC, Generic[M]):
     """
     The responsibilities of this class's descendants are
-        1. Knowing how to talk to the external source that carries the data (._get());
-        2. Knowing which classes can parse those data (._kernels()).
+        1. Knowing how to talk to the external source that carries the data (.files());
+        2. Knowing which classes can parse those data (.readers()).
 
     Additionally, because the only user-facing method that has nothing to do with metadata is .generate() and the
     subclasses don't implement this, you have to communicate the type of the objects it generates via a generic type variable: when
@@ -42,19 +44,16 @@ class ModestDataset(ABC, Generic[M]):
         pass
 
     @abstractmethod
-    def _kernels(self) -> list[ModestKernel[Any,M]]:
+    def _readers(self) -> list[ModestReader[Any,M2]]:  # Usually M2 == M but not always.
         pass
 
     @abstractmethod
     def _files(self) -> list[Path]:
         """
         Talk to the external data repository to pull the data for this dataset locally, and return its storage location.
-        Exactly one path is required per kernel.
+        Exactly one path is required per reader.
         """
         pass
-
-    def _getCachePath(self) -> Path:  # Will always be used by _files()
-        return PathManagement.datasetCache(language=self.getLanguage(), dataset_name=self.getCollectionName())
 
     # Implement in language-specific subclasses of the collection:
 
@@ -64,17 +63,25 @@ class ModestDataset(ABC, Generic[M]):
 
     # Auxiliary
 
-    def _getKernelsWithFiles(self) -> Iterator[tuple[ModestKernel,Path]]:
-        kernels = self._kernels()
+    def _getCachePath(self) -> Path:  # Will always be used by _files()
+        return PathManagement.datasetCache(language=self.getLanguage(), dataset_name=self.getCollectionName())
+
+    def _sources(self) -> Iterator[tuple[ModestReader[Any,M2],Path]]:
+        readers = self._readers()
         paths   = self._files() if not self._rerouted else self._rerouted
-        assert len(kernels) == len(paths), f"Got {len(kernels)} kernels but {len(paths)} paths." + bool(self._rerouted)*" Note that this dataset was rerouted."
-        return zip(kernels, paths)
+        assert len(readers) == len(paths), f"Got {len(readers)} readers but {len(paths)} paths." + bool(self._rerouted)*" Note that this dataset was rerouted."
+        return zip(readers, paths)
+
+    def _iterators(self) -> Iterator[Iterator[M]]:
+        for reader, path in self._sources():
+            yield reader.generateObjects(path)
 
     # Pre-implemented user-facing methods
 
+    @final
     def generate(self) -> Iterator[M]:
-        for kernel, path in self._getKernelsWithFiles():
-            yield from kernel.generateObjects(path)
+        for iterator in self._iterators():
+            yield from iterator
 
     def getLanguage(self) -> Language:
         return L(self._getLanguage())

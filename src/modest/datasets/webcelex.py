@@ -24,7 +24,7 @@ from tktkt.util.types import L
 from ..formats.celex import CelexLemmaMorphology
 from ..formats.tsv import iterateHandle, iterateTsv
 from ..interfaces.datasets import ModestDataset, Languageish
-from ..interfaces.kernels import ModestKernel
+from ..interfaces.readers import ModestReader
 
 CELEX_LANGUAGES = {
     L("English"): "English",
@@ -43,8 +43,8 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
     def getCollectionName(self) -> str:
         return "CELEX"
 
-    def _kernels(self) -> list[ModestKernel[Any,CelexLemmaMorphology]]:
-        return [_CelexKernel(self._verbose, self._legacy)]
+    def _readers(self) -> list[ModestReader[Any,CelexLemmaMorphology]]:
+        return [_CelexReader(self._verbose, self._legacy)]
 
     def _files(self) -> list[Path]:
         full_name = CELEX_LANGUAGES.get(self.getLanguage())
@@ -129,7 +129,7 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
                         out_handle.write(line + "\n")
 
 
-class _CelexKernel(ModestKernel[tuple[str,str],CelexLemmaMorphology]):
+class _CelexReader(ModestReader[tuple[str,str],CelexLemmaMorphology]):
 
     def __init__(self, verbose: bool, legacy: bool):
         self._verbose= verbose

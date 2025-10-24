@@ -4,9 +4,9 @@ from pathlib import Path
 from abc import abstractmethod
 
 import numpy.random as npr
-from modest.interfaces.kernels import ModestKernel
+from modest.interfaces.readers import ModestReader
 
-from ..interfaces.datasets import ModestDataset, M, Languageish
+from ..interfaces.datasets import ModestDataset, M, Languageish, M2
 from ..interfaces.morphologies import WordSegmentationWithLemma
 
 
@@ -32,8 +32,8 @@ class _ReducedModestDataset(ModestDataset[M]):
     def _getLanguage(self) -> Languageish:
         return self._nested._getLanguage()
 
-    def _kernels(self) -> list[ModestKernel[Any,M]]:
-        return self._nested._kernels()
+    def _readers(self) -> list[ModestReader[Any,M]]:
+        return self._nested._readers()
 
     def _files(self) -> list[Path]:
         if not self._do_cache:
@@ -42,10 +42,11 @@ class _ReducedModestDataset(ModestDataset[M]):
         cache_folder = self._getCachePath()
 
         paths = []
-        for filtered_iterator, kernel, original_path in self._getFilteredGenerators():
-            modified_path = cache_folder / original_path.name  # Note that original_path can be either a folder or a file, we don't know.
+        for iterator, source in zip(self._iterators_without_caching(), self._nested._sources()):
+            reader, path = source
+            modified_path = cache_folder / path.name  # Note that original_path can be either a folder or a file, we don't know.
             if not modified_path.exists():
-                kernel.writeObjects(filtered_iterator, in_path=original_path, out_path=modified_path)
+                reader.writeObjects(iterator, in_path=path, out_path=modified_path)
             paths.append(modified_path)
         return paths
 
@@ -57,20 +58,16 @@ class _ReducedModestDataset(ModestDataset[M]):
     def _filter(self, iterator: Iterator[M]) -> Iterator[M]:
         pass
 
-    def _getFilteredGenerators(self) -> Iterator[tuple[Iterator[M], ModestKernel, Path]]:
-        """
-        The implementation of this method should resemble that of super().generate() as closely as possible.
-        """
+    def _iterators_without_caching(self) -> Iterator[Iterator[M]]:
         self._resetFilter()
-        for kernel, path in zip(self._kernels(), self._nested._files()):
-            yield self._filter(kernel.generateObjects(path)), kernel, path
+        for iterator in self._nested._iterators():
+            yield self._filter(iterator)
 
-    def generate(self) -> Iterator[M]:
-        if self._do_cache:  # zips the kernels and the cache paths generated above.
-            yield from super().generate()
+    def _iterators(self) -> Iterator[Iterator[M]]:
+        if self._do_cache:  # zips the readers and the cache paths generated above.
+            yield from super()._iterators()
         else:  # You have to filter on-the-spot.
-            for filtered_iterator, _, _ in self._getFilteredGenerators():
-                yield from filtered_iterator
+            yield from self._iterators_without_caching()
 
 
 class _ElementwiseFilteredModestDataset(_ReducedModestDataset[M]):
@@ -137,7 +134,7 @@ class DropoutModestDataset(_ElementwiseFilteredModestDataset[M]):
         assert self._P_admit <= 1
 
     def _getModificationName(self) -> str:
-        return f"dropout-{self._size}_{self._seed}"
+        return f"dropout={self._size}_seed={self._seed}"
 
     def _resetFilter(self):
         self._so_far = 0
@@ -166,7 +163,7 @@ class SampleLexemes(_ReducedModestDataset[T]):
         self._n_lexemes    = n_lexemes
         self._n_per_lexeme = n_per_lexeme
 
-    def _filter(self, iterator: Iterator[M]) -> Iterator[M]:  # You can't filter across kernels because when you write the cache, the IDs in the filter stream are cross-referenced with a per-kernel stream of raw examples.
+    def _filter(self, iterator: Iterator[M]) -> Iterator[M]:  # You can't filter across readers because when you write the cache, the IDs in the filter stream are cross-referenced with a per-reader stream of raw examples.
         rng = npr.default_rng(seed=self._seed)
 
         id_to_object = {obj._id: obj for obj in iterator}  # Assumed to be unordered, so you just need to store the whole thing in memory.

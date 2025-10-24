@@ -1,6 +1,6 @@
 """
-A kernel in MoDeST is a class that reads a file or folder of files with exactly one storage and tag format.
-A dataset provides a unified interface overtop one or more kernels.
+A reader in MoDeST is a class that reads a file or folder of files with exactly one storage and tag format.
+A dataset provides a unified interface overtop one or more readers.
 
 The reason for separating these two concepts is so that when composing two datasets, the default assumption is that
 the datasets themselves already work with multiple formats and thus no extra complexity is introduced by suddenly
@@ -19,7 +19,7 @@ Raw = TypeVar("Raw")
 M = TypeVar("M", bound=_IdentifiedWord)
 
 
-class ModestKernel(Generic[Raw,M], ABC):
+class ModestReader(Generic[Raw,M], ABC):
 
     # Reading
 
@@ -71,7 +71,7 @@ class ModestKernel(Generic[Raw,M], ABC):
                         break
                 else:
                     if looked_everywhere:
-                        raise RuntimeError(f"Cannot find object id {obj._id} in the raw examples generate by the {self.__class__.__name__} kernel.")
+                        raise RuntimeError(f"Cannot find object id {obj._id} in the raw examples generate by the {self.__class__.__name__} reader.")
                     else:
                         read_stream = self.generateRaw(in_path)
                         looked_everywhere = True

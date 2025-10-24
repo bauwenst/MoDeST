@@ -6,7 +6,7 @@ from pathlib import Path
 from abc import abstractmethod
 
 from ..interfaces.datasets import ModestDataset, M, Languageish
-from ..interfaces.kernels import ModestKernel, Raw
+from ..interfaces.readers import ModestReader, Raw
 from ..interfaces.morphologies import WordSegmentation
 
 
@@ -53,24 +53,24 @@ class _ConvertedSegmentationsDataset(ModestDataset[M2], Generic[M,M2]):
 
     def __init__(self, wrapper_name: str, nested_dataset: ModestDataset[M]):
         super().__init__()
-        self._nested_dataset = nested_dataset
+        self._nested = nested_dataset
         self._wrapper_name   = wrapper_name
 
     def getCollectionName(self) -> str:
-        return self._nested_dataset.getCollectionName() + "-" + self._wrapper_name
+        return self._nested.getCollectionName() + "-" + self._wrapper_name
 
     def _getLanguage(self) -> Languageish:
-        return self._nested_dataset._getLanguage()
+        return self._nested._getLanguage()
 
-    def _kernels(self) -> list[ModestKernel[Any,M]]:
-        return self._nested_dataset._kernels()
+    def _readers(self) -> list[ModestReader[Any,M2]]:
+        return self._nested._readers()
 
     def _files(self) -> list[Path]:
-        return self._nested_dataset._files()
+        return self._nested._files()
 
-    def generate(self) -> Iterator[M2]:
-        for segmentation in super().generate():
-            yield self._convertSegmentation(segmentation)
+    def _iterators(self) -> Iterator[Iterator[M]]:
+        for iterator in self._nested._iterators():
+            yield map(self._convertSegmentation, iterator)
 
     @abstractmethod
     def _convertSegmentation(self, original_segmentation: M) -> M2:

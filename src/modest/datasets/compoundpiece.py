@@ -11,7 +11,7 @@ from tktkt.util.types import L
 from ..formats.trivial import TrivialDecomposition
 from ..interfaces.datasets import ModestDataset, Languageish, M
 from ..formats.tsv import iterateTsv
-from ..interfaces.kernels import ModestKernel
+from ..interfaces.readers import ModestReader
 
 
 class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
@@ -85,8 +85,8 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
     def _getLanguage(self) -> Languageish:
         return self._lang
 
-    def _kernels(self) -> list[ModestKernel[Any,M]]:
-        return [_CompoundPieceKernel()]
+    def _readers(self) -> list[ModestReader[Any,M]]:
+        return [_CompoundPieceReader()]
 
     def _files(self) -> list[Path]:
         langcode = CompoundPieceDataset.LANGCODES.get(self.getLanguage())
@@ -103,7 +103,7 @@ class CompoundPieceDataset(ModestDataset[TrivialDecomposition]):
         return [cache]
 
 
-class _CompoundPieceKernel(ModestKernel[tuple[str,str,str],TrivialDecomposition]):
+class _CompoundPieceReader(ModestReader[tuple[str,str,str],TrivialDecomposition]):
 
     def _generateRaw(self, path: Path):
         yield from iterateTsv(path)

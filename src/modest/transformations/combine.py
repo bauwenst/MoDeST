@@ -4,12 +4,11 @@ from pathlib import Path
 
 from tktkt.util.iterables import allEqual, cat
 
-from ..interfaces.datasets import ModestDataset, Languageish, M
-from ..interfaces.kernels import ModestKernel
+from ..interfaces.datasets import ModestDataset, Languageish, M, M2
+from ..interfaces.readers import ModestReader
 
 
 class ChainedModestDatasets(ModestDataset[M]):
-    # The reason why we don't just implement this class's .generate() as `for d in self._dataset: yield from d.generate()` is that concatenating kernels does this automatically AND allows sampling the result to new files.
 
     def __init__(self, datasets: List[ModestDataset[M]]):
         assert datasets
@@ -23,11 +22,16 @@ class ChainedModestDatasets(ModestDataset[M]):
     def _getLanguage(self) -> Languageish:
         return self._datasets[0].getLanguage()
 
-    def _kernels(self) -> list[ModestKernel[Any,M]]:
-        return list(cat(dataset._kernels() for dataset in self._datasets))
+    def _readers(self) -> list[ModestReader[Any,M]]:
+        return list(cat(dataset._readers() for dataset in self._datasets))
 
-    def _files(self) -> List[Path]:
+    def _files(self) -> list[Path]:
         return list(cat(dataset._files() for dataset in self._datasets))
+
+    def _iterators(self) -> Iterator[Iterator[M]]:
+        for dataset in self._datasets:
+            for iterator in dataset._iterators():
+                yield iterator
 
 
 class OnExhaustion(Enum):
@@ -45,10 +49,18 @@ class InterleavedModestDatasets(ChainedModestDatasets[M]):
     def getCollectionName(self) -> str:
         return "¦".join(dataset.getCollectionName() for dataset in self._datasets)
 
-    def generate(self) -> Iterator[M]:
-        pairs = list(self._getKernelsWithFiles())
-        iterators          = [kernel.generateObjects(path) for kernel, path in pairs]
-        iterator_completed = [False]*len(pairs)
+    def _readers(self) -> list[ModestReader]:
+        return []
+
+    def _files(self) -> list[Path]:  # Because InterleavedModestDatasets.generate() cycles through  are no separate iterators (that's the whole point)
+        return []
+
+    def _iterators(self) -> Iterator[Iterator[M]]:
+        yield self._oneGiganticIterator()
+
+    def _oneGiganticIterator(self) -> Iterator[M]:
+        iterators          = [dataset.generate() for dataset in self._datasets]
+        iterator_completed = [False              for dataset in self._datasets]
         idx = 0
         while True:
             iterator = iterators[idx]
@@ -67,8 +79,7 @@ class InterleavedModestDatasets(ChainedModestDatasets[M]):
                 elif self._if_exhausted == OnExhaustion.REPEAT:
                     iterator_completed[idx] = True
                     if not all(iterator_completed):
-                        iterators[idx] = pairs[idx][0].generateObjects(pairs[idx][1])
-                        idx = (idx + 1) % len(iterators)
+                        iterators[idx] = self._datasets[idx].generate()
                     else:
                         break
                 elif self._if_exhausted == OnExhaustion.STOP:
