@@ -6,19 +6,6 @@ import langcodes
 from pathlib import Path
 from typing import Iterable, Iterator, Any
 
-# Web stuff
-# - Make browser
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-
-# - Parse stuff in browser
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-import time
-import bs4
-
 from tktkt.util.types import L
 
 from ..formats.celex import CelexLemmaMorphology
@@ -31,6 +18,8 @@ CELEX_LANGUAGES = {
     L("German"): "German",
     L("Dutch"): "Dutch"
 }
+
+_WEBCELEX_NEEDS_AUTHENTICATION = True  # It used not to :(
 
 
 class CelexDataset(ModestDataset[CelexLemmaMorphology]):
@@ -53,67 +42,89 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
 
         cache_path = self._getCachePath() / (f"{self.getLanguage().to_tag()}.struclab.tsv")
         if not cache_path.exists():
-            print("Simulating browser to download CELEX dataset (takes under 60 seconds)...")
+            if not _WEBCELEX_NEEDS_AUTHENTICATION:
+                # - Make browser
+                from selenium import webdriver
+                from webdriver_manager.chrome import ChromeDriverManager
+                from selenium.webdriver.chrome.options import Options
+                from selenium.webdriver.chrome.service import Service
 
-            # Make options (custom arguments)
-            chrome_options = Options()
-            chrome_options.headless = True
-            # chrome_options.add_experimental_option("detach", True)  # Add this if you want the browser to stay open after the experiment is done.
+                # - Parse stuff in browser
+                from selenium.webdriver.common.by import By
+                from selenium.webdriver.support.wait import WebDriverWait
+                import time
+                import bs4
 
-            # Make service (mandatory arguments)
-            if os.name == "nt":
-                driver_path = Path(ChromeDriverManager().install()).parent / "chromedriver.exe"  # To prevent "OSError: [WinError 193] %1 is not a valid Win32 application". https://stackoverflow.com/a/78797164/9352077
+                print("Simulating browser to download CELEX dataset (takes under 60 seconds)...")
+
+                # Make options (custom arguments)
+                chrome_options = Options()
+                chrome_options.headless = True
+                # chrome_options.add_experimental_option("detach", True)  # Add this if you want the browser to stay open after the experiment is done.
+
+                # Make service (mandatory arguments)
+                if os.name == "nt":
+                    driver_path = Path(ChromeDriverManager().install()).parent / "chromedriver.exe"  # To prevent "OSError: [WinError 193] %1 is not a valid Win32 application". https://stackoverflow.com/a/78797164/9352077
+                else:
+                    driver_path = Path(ChromeDriverManager().install())
+                service = Service(executable_path=driver_path.as_posix())
+
+                # Instantiate driver
+                driver = webdriver.Chrome(service=service, options=chrome_options)  # If you get a "ValueError: There is no such driver by url", you need to pip upgrade the webdriver_manager package.
+                driver.implicitly_wait(3)  # Waiting time in case an element isn't found (WebCelex is slow...).
+
+                # Entry page to select language
+                try:
+                    driver.get("http://celex.mpi.nl/scripts/entry.pl")
+                except Exception as e:
+                    print("Oh oh! It seems that CELEX is dead :(")
+                    raise e
+                driver.find_element(by=By.LINK_TEXT, value=f"{full_name} Lemmas").click()
+
+                # Select column
+                driver.switch_to.frame(driver.find_element(by=By.CSS_SELECTOR, value=f"frame[name='{full_name.lower()}_lemmas_cols']"))
+                driver.find_element(by=By.CSS_SELECTOR, value="option[value='StrucLab']").click()
+                driver.find_element(by=By.CSS_SELECTOR, value="input[type='submit']").click()
+
+                # Skip constraints
+                driver.switch_to.default_content()
+                driver.find_element(by=By.CSS_SELECTOR, value="input[type='submit']").click()
+
+                # Get tabular format and add word surface forms
+                driver.find_element(by=By.CSS_SELECTOR, value="input[name='word']").click()
+                driver.find_element(by=By.CSS_SELECTOR, value="input[name='fixit']").click()
+                driver.find_element(by=By.CSS_SELECTOR, value="input[type='submit']").click()
+
+                # Wait until the final page appears.
+                time.sleep(3)
+
+                # Wait until that page has loaded. It gets 60 seconds to do so.  https://stackoverflow.com/a/30385843/9352077
+                WebDriverWait(driver, timeout=60).until(lambda d: d.execute_script("return document.readyState") == "complete")
+
+                # Parse the page and turn it into a TSV.
+                table = driver.find_element(by=By.TAG_NAME, value="table")
+                soup = bs4.BeautifulSoup(table.get_attribute("outerHTML"), features="lxml")
+                with open(cache_path, "w", encoding="utf-8") as out_handle:
+                    first = True
+                    for row in soup.find("table").find("tbody").find_all("tr"):
+                        if first:
+                            first = False
+                            continue
+
+                        word = row.find("td")
+                        tag = word.find_next("td")
+                        if tag.text:
+                            out_handle.write(word.text + "\t" + tag.text + "\n")
+                print("Successfully downloaded CELEX.")
             else:
-                driver_path = Path(ChromeDriverManager().install())
-            service = Service(executable_path=driver_path.as_posix())
+                import requests
 
-            # Instantiate driver
-            driver = webdriver.Chrome(service=service, options=chrome_options)  # If you get a "ValueError: There is no such driver by url", you need to pip upgrade the webdriver_manager package.
-            driver.implicitly_wait(3)  # Waiting time in case an element isn't found (WebCelex is slow...).
-
-            # Entry page to select language
-            try:
-                driver.get("http://celex.mpi.nl/scripts/entry.pl")
-            except Exception as e:
-                print("Oh oh! It seems that CELEX is dead :(")
-                raise e
-            driver.find_element(by=By.LINK_TEXT, value=f"{full_name} Lemmas").click()
-
-            # Select column
-            driver.switch_to.frame(driver.find_element(by=By.CSS_SELECTOR, value=f"frame[name='{full_name.lower()}_lemmas_cols']"))
-            driver.find_element(by=By.CSS_SELECTOR, value="option[value='StrucLab']").click()
-            driver.find_element(by=By.CSS_SELECTOR, value="input[type='submit']").click()
-
-            # Skip constraints
-            driver.switch_to.default_content()
-            driver.find_element(by=By.CSS_SELECTOR, value="input[type='submit']").click()
-
-            # Get tabular format and add word surface forms
-            driver.find_element(by=By.CSS_SELECTOR, value="input[name='word']").click()
-            driver.find_element(by=By.CSS_SELECTOR, value="input[name='fixit']").click()
-            driver.find_element(by=By.CSS_SELECTOR, value="input[type='submit']").click()
-
-            # Wait until the final page appears.
-            time.sleep(3)
-
-            # Wait until that page has loaded. It gets 60 seconds to do so.  https://stackoverflow.com/a/30385843/9352077
-            WebDriverWait(driver, timeout=60).until(lambda d: d.execute_script("return document.readyState") == "complete")
-
-            # Parse the page and turn it into a TSV.
-            table = driver.find_element(by=By.TAG_NAME, value="table")
-            soup = bs4.BeautifulSoup(table.get_attribute("outerHTML"), features="lxml")
-            with open(cache_path, "w", encoding="utf-8") as out_handle:
-                first = True
-                for row in soup.find("table").find("tbody").find_all("tr"):
-                    if first:
-                        first = False
-                        continue
-
-                    word = row.find("td")
-                    tag = word.find_next("td")
-                    if tag.text:
-                        out_handle.write(word.text + "\t" + tag.text + "\n")
-            print("Successfully downloaded CELEX.")
+                url = f"https://raw.githubusercontent.com/bauwenst/MoDeST/master/data/in/webcelex/celex_morphology_{self.getLanguage().to_tag()}.txt"
+                response = requests.get(url)
+                if response.status_code == 404:
+                    raise RuntimeError(f"The URL {url} does not exist.")
+                with open(cache_path, "wb") as handle:
+                    handle.write(response.content)
 
         return [cache_path]
 
