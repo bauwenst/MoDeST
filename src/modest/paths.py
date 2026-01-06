@@ -1,7 +1,6 @@
 from datasets.config import HF_DATASETS_CACHE  # Ensure that the user has installed this package and hence has a HF_HOME.
 
 from pathlib import Path
-from typing import List
 from langcodes import Language
 
 import time
@@ -37,7 +36,7 @@ class PathManagement:
         return PathManagement._extendHome(["_to-be-deleted-" + time.strftime("%Y%m%d-%H%M%S")])
 
     @staticmethod
-    def _extendHome(parts: List[str]) -> Path:
+    def _extendHome(parts: list[str]) -> Path:
         folder = PATH_HFHOME_MODEST
         for part in parts:
             folder /= part

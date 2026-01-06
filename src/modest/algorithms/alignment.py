@@ -1,4 +1,4 @@
-from typing import List, Tuple, Iterable
+from typing import Iterable
 from dataclasses import dataclass
 
 import tokenizers.normalizers as tn
@@ -8,7 +8,7 @@ normalizer = tn.Sequence([tn.NFD(), tn.StripAccents(), tn.NFKC()])
 @dataclass
 class ViterbiNode:
     best_count: int = -1  # Ensures that the backpointer is initialised by the first node that talks to this node.
-    backpointer: Tuple[int, int] = None
+    backpointer: tuple[int, int] = None
 
 
 def alignMorphemes_Greedy(word: str, morphemes: Iterable[str]) -> str:
@@ -57,7 +57,7 @@ def alignMorphemes_Greedy(word: str, morphemes: Iterable[str]) -> str:
     return result
 
 
-def alignMorphemes_Viterbi(word: str, morphemes: Iterable[str]) -> Tuple[str, List[int]]:  # TODO: Should be a list of strings, not just one string. String concatenation is more expensive than list appends.
+def alignMorphemes_Viterbi(word: str, morphemes: Iterable[str]) -> tuple[str, list[int]]:  # TODO: Should be a list of strings, not just one string. String concatenation is more expensive than list appends.
     """
     Iterative Viterbi algorithm with the same optimal results as a recursive bruteforce, except the problem goes
     from completely intractable (several minutes, running out of memory) to trivial (0 seconds and a small table).

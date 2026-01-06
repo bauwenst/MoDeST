@@ -2,7 +2,6 @@
 TODO: You can do a lot of caching at construction. No need to generate the morphemeSplit if you
       know the list of morphemes beforehand.
 """
-from typing import List, Tuple
 from dataclasses import dataclass
 
 import re
@@ -17,8 +16,8 @@ from ..algorithms.alignment import alignMorphemes_Viterbi
 @dataclass
 class AlignmentStack:
     current_morpheme: int
-    morpheme_indices: List[int]
-    morphs: List[str]
+    morpheme_indices: list[int]
+    morphs: list[str]
 
 
 class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
@@ -170,7 +169,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
     ### SPLITTING METHODS ###
     #########################
     ### MORPHEMES ###
-    def decompose(self) -> Tuple[str, ...]:
+    def decompose(self) -> tuple[str, ...]:
         """
         Produces a flat split of all morphemes in the annotation. This is very simple,
         but doesn't match the morphs in the lemma:
@@ -183,7 +182,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
             return (self.morphemetext,)
 
     ### LEXEMES ###
-    def segmentFree(self) -> Tuple[str, ...]:
+    def segmentFree(self) -> tuple[str, ...]:
         """
         Not all morphemes have their own lexeme.
 
@@ -228,7 +227,7 @@ class CelexLemmaMorphology(WordDecompositionWithFreeSegmentation):
         return s
 
     ### MORPHS ###
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         """
         Splits into morphs rather than morphemes. That is: removing spaces from the result will produce the lemma.
         For the lemma "kolencentrale":

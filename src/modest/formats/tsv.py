@@ -1,7 +1,7 @@
 """
 Tools for TSVs, and particularly those that represent word-count pairs.
 """
-from typing import TextIO, Tuple, Optional, Callable, Dict
+from typing import TextIO, Optional, Callable
 from collections import Counter
 from pathlib import Path
 
@@ -36,7 +36,7 @@ def iterateHandle(open_file_handle: TextIO, verbose=False):
             yield line.rstrip()
 
 
-def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, verbose=False) -> Iterable[Tuple[str, ...]]:
+def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, verbose=False) -> Iterable[tuple[str, ...]]:
     """
     Iterating over the words file is slightly trickier than you think due to 2 technicalities that are easy to forget:
         - You must strip the newline at the end;
@@ -116,7 +116,7 @@ def tsvToCounter(tsv_path: Path, sep="\t") -> Counter:
 
 
 @timeit
-def mergeTsvs(word_files: List[Path], out_file: Path, delete_afterwards: bool=False,
+def mergeTsvs(word_files: list[Path], out_file: Path, delete_afterwards: bool=False,
               trim_hapax_every: int=100000):
     """
     :param trim_hapax_every: To mitigate against very large tails, trim words of count 1 (hapax legomena)
@@ -206,7 +206,7 @@ def getSubsetOfAllCounts(tsv_path: Path, subset: Iterable[str], subset_name: str
 
 def loadAndWeight(tsv_path: Path,
                   subset: Iterable[str], subset_name: str,
-                  reweighting_function: Callable[[float],float]) -> Dict[str, float]:
+                  reweighting_function: Callable[[float],float]) -> dict[str, float]:
     """
     Takes care of converting word counts (integers) to weights (floats)
     and returns a queriable object even if no counts exist.

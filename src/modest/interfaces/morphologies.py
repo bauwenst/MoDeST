@@ -16,7 +16,6 @@ Here, X is not the intersection of A and B because Z is not an X. But when we wr
         ...
 it is impossible to express that we want Z to be a Y.
 """
-from typing import Tuple
 from abc import abstractmethod, ABC
 
 from ..algorithms.alignment import alignMorphemes_Viterbi
@@ -67,16 +66,16 @@ class _AddLexicalForm(_AddLemma):
 
 class _AddSegmentation(ABC):
     @abstractmethod
-    def segment(self) -> Tuple[str, ...]:  # Should be faster than a list.  https://stackoverflow.com/a/22140115/9352077
+    def segment(self) -> tuple[str, ...]:  # Should be faster than a list.  https://stackoverflow.com/a/22140115/9352077
         pass
 
 
 class _AddDecomposition(_AddSegmentation):
     @abstractmethod
-    def decompose(self) -> Tuple[str, ...]:
+    def decompose(self) -> tuple[str, ...]:
         pass
 
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         return tuple(alignMorphemes_Viterbi(self.word, self.decompose())[0].split(" "))
 
 
@@ -140,7 +139,7 @@ class WordSegmentationWithFreeSegmentation(WordSegmentation):
     """
 
     @abstractmethod
-    def segmentFree(self) -> Tuple[str, ...]:
+    def segmentFree(self) -> tuple[str, ...]:
         pass
 
 
@@ -174,7 +173,7 @@ class WordDecompositionWithFreeSegmentation(WordDecomposition):
     """
 
     @abstractmethod
-    def segmentFree(self) -> Tuple[str, ...]:
+    def segmentFree(self) -> tuple[str, ...]:
         pass
 
 
@@ -193,20 +192,20 @@ class MorphologyVisitor(ABC):
     dynamically, so all that is executed is the 'pass' body. The solution is a visitor design pattern.
     """
     @abstractmethod
-    def __call__(self, morphology: WordSegmentation) -> Tuple[str, ...]:
+    def __call__(self, morphology: WordSegmentation) -> tuple[str, ...]:
         pass
 
 
 class MorphSplit(MorphologyVisitor):
-    def __call__(self, morphology: WordSegmentation) -> Tuple[str, ...]:
+    def __call__(self, morphology: WordSegmentation) -> tuple[str, ...]:
         return morphology.segment()
 
 
 class MorphemeSplit(MorphologyVisitor):
-    def __call__(self, morphology: WordDecomposition) -> Tuple[str, ...]:
+    def __call__(self, morphology: WordDecomposition) -> tuple[str, ...]:
         return morphology.decompose()
 
 
 class FreeMorphSplit(MorphologyVisitor):
-    def __call__(self, morphology: WordSegmentationWithFreeSegmentation) -> Tuple[str, ...]:
+    def __call__(self, morphology: WordSegmentationWithFreeSegmentation) -> tuple[str, ...]:
         return morphology.segmentFree()

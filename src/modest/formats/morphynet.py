@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from ..algorithms.alignment import alignMorphemes_Viterbi
 from ..interfaces.morphologies import WordDecompositionWithLexicalForm, WordDecomposition
 
@@ -19,7 +17,7 @@ class MorphyNetInflection(WordDecompositionWithLexicalForm):
         )
         self.morphemes = tuple(raw_morpheme_sequence.split("|"))
 
-    def decompose(self) -> Tuple[str, ...]:
+    def decompose(self) -> tuple[str, ...]:
         return self.morphemes
 
 
@@ -73,8 +71,8 @@ class MorphyNetDerivation(WordDecomposition):
         self._morphemes = tuple(morphemes)
         self._morphs    = tuple(morphs)
 
-    def decompose(self) -> Tuple[str, ...]:
+    def decompose(self) -> tuple[str, ...]:
         return self._morphemes
 
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         return self._morphs

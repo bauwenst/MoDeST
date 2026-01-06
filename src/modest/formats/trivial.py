@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from ..interfaces.morphologies import WordDecomposition, WordSegmentation, WordSegmentationWithLemma
 
 
@@ -14,10 +12,10 @@ class TrivialDecomposition(WordDecomposition):
         self._morphs    = tuple(segmentation_tag.split(sep))
         self._morphemes = tuple(decomposition_tag.split(sep))
 
-    def decompose(self) -> Tuple[str, ...]:
+    def decompose(self) -> tuple[str, ...]:
         return self._morphemes
 
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         return self._morphs
 
 
@@ -31,7 +29,7 @@ class TrivialSegmentation(WordSegmentation):
         super().__init__(id=id, word=word)
         self._morphs = tuple(segmentation_tag.split(sep))
 
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         return self._morphs
 
 
@@ -41,5 +39,5 @@ class TrivialSegmentationWithLemma(WordSegmentationWithLemma):
         super().__init__(id=id, word=word, lemma=lemma)
         self.morphs = tuple(segmentation_tag.split(sep))
 
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         return self.morphs

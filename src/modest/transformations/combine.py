@@ -1,4 +1,4 @@
-from typing import List, Any, Iterator
+from typing import Any, Iterator
 from enum import Enum
 from pathlib import Path
 
@@ -10,7 +10,7 @@ from ..interfaces.readers import ModestReader
 
 class ChainedModestDatasets(ModestDataset[M]):
 
-    def __init__(self, datasets: List[ModestDataset[M]]):
+    def __init__(self, datasets: list[ModestDataset[M]]):
         assert datasets
         assert allEqual(dataset.getLanguage() for dataset in datasets)
         self._datasets = datasets
@@ -42,7 +42,7 @@ class OnExhaustion(Enum):
 
 class InterleavedModestDatasets(ChainedModestDatasets[M]):
 
-    def __init__(self, datasets: List[ModestDataset[M]], exhaustion_strategy: OnExhaustion=OnExhaustion.IGNORE):
+    def __init__(self, datasets: list[ModestDataset[M]], exhaustion_strategy: OnExhaustion=OnExhaustion.IGNORE):
         super().__init__(datasets)
         self._if_exhausted = exhaustion_strategy
 

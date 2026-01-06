@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from tktkt.preparation.mappers import MorphoChallengeCapitals
 from ..interfaces.morphologies import WordDecomposition
 
@@ -46,8 +44,8 @@ class MorphoChallenge2010Morphology(WordDecomposition):
             self.morpheme_sequences.append(morphemes)
             self.tag_sequences.append(tags)
 
-    def segment(self) -> Tuple[str, ...]:
+    def segment(self) -> tuple[str, ...]:
         return tuple(self.morph_sequences[0])
 
-    def decompose(self) -> Tuple[str, ...]:
+    def decompose(self) -> tuple[str, ...]:
         return tuple(self.morpheme_sequences[0])
