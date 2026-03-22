@@ -11,6 +11,10 @@ As an example, the Dutch derivation `isometrisch` ("isometric") can be decompose
 *Morphological segmentation* is the task of isolating the substrings of a word that correspond to its morphemes. These substrings are called *morphs*.
 In the above example, the segmentation would be `iso/metr/ic`.
 
+```shell
+pip install modest[all]
+```
+
 ## Languages and Datasets
 The supported languages are simply under `modest.languages`, so the list will not be reproduced here.
 The list of datasets roughly coincides with the downloaders under `modest.datasets`. Currently, the package supports:
@@ -18,12 +22,6 @@ The list of datasets roughly coincides with the downloaders under `modest.datase
 - MorphyNet
 - MorphoChallenge2010
 - CompoundPiece
-
-## Installation
-Run
-```shell
-pip install "modest[github] @ git+https://github.com/bauwenst/MoDeST"
-```
 
 ## Example
 Yes, it really is this easy, with full type checking and autocompletion by your IDE:
