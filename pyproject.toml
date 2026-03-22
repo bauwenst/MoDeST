@@ -1,9 +1,9 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "modest"
+name = "modest_bauwenst"
 version = "2026.01.01"
 requires-python = ">= 3.9"
 authors = [
@@ -14,7 +14,7 @@ maintainers = [
 ]
 description = "MoDeST: a Morphological Decomposition & Segmentation Trove."
 readme = "README.md"
-license = {file = "LICENSE"}
+license-files = ["LICENSE"]
 keywords = ["NLP", "segmentation", "natural language", "decomposition", "morphology", "datasets"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -31,5 +31,5 @@ dependencies = [
 # These are not optional, but if you have these packages as editable install, you don't want to let pip install them again!
 [project.optional-dependencies]
 github = [
-    "tktkt[github] @ git+https://github.com/bauwenst/TkTkT"
+    "tktkt[all,github] @ git+https://github.com/bauwenst/TkTkT"
 ]
