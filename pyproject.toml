@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modest_bauwenst"
-version = "2026.01.01"
+version = "2026.03.01"
 requires-python = ">= 3.9"
 authors = [
   {name = "Thomas Bauwens", email = "thomas.bauwens@kuleuven.be"}
@@ -29,11 +29,13 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/bauwenst/MoDeST"
-"Bug Tracker" = "https://github.com/bauwenst/MoDeST/issues"
+Source = "https://github.com/bauwenst/MoDeST"
+Issues = "https://github.com/bauwenst/MoDeST/issues"
 
 # These are not optional, but if you have these packages as editable install, you don't want to let pip install them again!
 [project.optional-dependencies]
+all = [
+    "tktkt[all]"
+]
 github = [
-    "tktkt[all,github] @ git+https://github.com/bauwenst/TkTkT"
 ]

@@ -1,4 +1,4 @@
-<img src="doc/logo.png">
+<img src="doc/logo.png" alt="MoDeST">
 
 # MoDeST: a Morphological Decomposition &amp; Segmentation Trove
 The point of MoDeST is two-fold:
