@@ -6,7 +6,7 @@ from abc import abstractmethod
 import numpy.random as npr
 from modest.interfaces.readers import ModestReader
 
-from ..interfaces.datasets import ModestDataset, M, Languageish, M2
+from ..interfaces.datasets import ModestDataset, M, Languageish
 from ..interfaces.morphologies import WordSegmentationWithLemma
 
 

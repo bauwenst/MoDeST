@@ -1,16 +1,16 @@
-from typing import Iterable, Iterator, Any
+from typing import Iterator, Any
 from pathlib import Path
 
 import requests
 from logging import getLogger
 
-from ..interfaces.readers import ModestReader, Raw, M
+from ..interfaces.readers import ModestReader
 
 logger = getLogger(__name__)
 
 from tktkt.util.types import L
 
-from ..interfaces.datasets import ModestDataset, Languageish
+from ..interfaces.datasets import ModestDataset
 from ..formats.tsv import iterateHandle
 from ..formats.morphochallenge2010 import MorphoChallenge2010Morphology
 

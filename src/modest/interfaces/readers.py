@@ -6,7 +6,7 @@ The reason for separating these two concepts is so that when composing two datas
 the datasets themselves already work with multiple formats and thus no extra complexity is introduced by suddenly
 having more than one thing rather than one thing to iterate internally.
 """
-from typing import TypeVar, Generic, Iterator, Generator, Self
+from typing import TypeVar, Generic, Iterator, Generator
 from pathlib import Path
 from abc import ABC, abstractmethod
 

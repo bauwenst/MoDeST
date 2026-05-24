@@ -6,7 +6,7 @@ from pathlib import Path
 from abc import abstractmethod
 
 from ..interfaces.datasets import ModestDataset, M, Languageish
-from ..interfaces.readers import ModestReader, Raw
+from ..interfaces.readers import ModestReader
 from ..interfaces.morphologies import WordSegmentation
 
 

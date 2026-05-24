@@ -6,11 +6,11 @@ the original overhead.
 We only provide two variants: segmentations and segmentations with lemma. Decompositions are usually precomputed anyway,
 so for those the original dataset will do.
 """
-from typing import Any, Iterator, TypeVar, Self, TextIO, Generator, Generic
+from typing import Iterator, TypeVar, Generator, Generic
 from abc import abstractmethod
 from pathlib import Path
 
-from ..interfaces.readers import ModestReader, Raw, Writer
+from ..interfaces.readers import ModestReader, Writer
 from ..interfaces.datasets import ModestDataset, M, Languageish
 from ..interfaces.morphologies import WordSegmentation, WordSegmentationWithLemma
 from ..formats.trivial import TrivialSegmentation, TrivialSegmentationWithLemma

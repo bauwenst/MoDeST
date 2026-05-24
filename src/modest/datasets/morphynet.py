@@ -4,7 +4,7 @@ For downloading files from the MorphyNet repository on GitHub.
 URLs for MorphyNet have the following format:
     https://raw.githubusercontent.com/kbatsuren/MorphyNet/main/{lang}/{lang}.{inflectional/derivational}.v1.tsv
 """
-from typing import Iterable, Any, Iterator
+from typing import Any
 from abc import abstractmethod
 from pathlib import Path
 from enum import Enum

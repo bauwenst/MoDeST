@@ -2,15 +2,14 @@
 For downloading data from WebCelex.
 """
 import os
-import langcodes
 from pathlib import Path
-from typing import Iterable, Iterator, Any
+from typing import Any
 
 from tktkt.util.types import L
 
 from ..formats.celex import CelexLemmaMorphology
 from ..formats.tsv import iterateHandle, iterateTsv
-from ..interfaces.datasets import ModestDataset, Languageish
+from ..interfaces.datasets import ModestDataset
 from ..interfaces.readers import ModestReader
 
 CELEX_LANGUAGES = {
