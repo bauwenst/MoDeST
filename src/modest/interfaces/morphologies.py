@@ -18,7 +18,7 @@ it is impossible to express that we want Z to be a Y.
 """
 from abc import abstractmethod, ABC
 
-from ..algorithms.alignment import alignMorphemes_Viterbi
+from ..util.alignment import alignMorphemes_Viterbi
 
 
 class _IdentifiedWord:

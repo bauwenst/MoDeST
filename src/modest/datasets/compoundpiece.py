@@ -108,14 +108,13 @@ class _CompoundPieceReader(ModestReader[tuple[str,str,str],TrivialDecomposition]
     def _generateRaw(self, path: Path):
         yield from iterateTsv(path)
 
-    def _parseRaw(self, raw, id: int):
+    def _parseRaw(self, raw: tuple[str,str,str], id: int):
         word, decomposition, segmentation = raw
         yield TrivialDecomposition(
             id=id,
             word=word,
-            decomposition_tag=decomposition,
-            segmentation_tag=segmentation,
-            sep="-"
+            decomposition=decomposition.split("-"),
+            segmentation=segmentation.split("-")
         )
 
     def _createWriter(self):

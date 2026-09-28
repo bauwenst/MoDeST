@@ -10,7 +10,7 @@ from tktkt.util.printing import PrintTable, warn
 DO_WARNINGS = False
 
 from ..interfaces.morphologies import WordDecompositionWithFreeSegmentation
-from ..algorithms.alignment import alignMorphemes_Viterbi
+from ..util.alignment import alignMorphemes_Viterbi
 
 
 @dataclass

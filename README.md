@@ -22,6 +22,7 @@ The list of datasets roughly coincides with the downloaders under `modest.datase
 - MorphyNet
 - MorphoChallenge2010
 - CompoundPiece
+- GreekAnnotatedDictionary
 
 ## Example
 Yes, it really is this easy, with full type checking and autocompletion by your IDE:

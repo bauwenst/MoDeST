@@ -1,4 +1,5 @@
 TODO:
+    - It is unclear to me why you would want a formats/ subpackage if there is a datasets/ subpackage.
     - MorphyNet has entries that have just "-" which is apparently a code for "same as lemma" https://github.com/kbatsuren/MorphyNet/issues/7
         - For Spanish and Italian, these are actually quite interesting cases. They are words like infinitives and the masculine singular of adjectives and participles.
           That is: words that very clearly have bound morphemes, but the only way you could know about these morphemes is

@@ -44,19 +44,13 @@ class _ModestDatasetPrecomputedBase(ModestDataset[M], Generic[Nested,M]):
             reader = self._reader()
             stream = TsvWriter().openStream(cache_file)
             for obj in self._nested.generate():
-                stream.send(reader._nestedObjectToRaw(obj))
+                stream.send(reader._serialiseNestedObject(obj))
             stream.close()
 
         return [cache_file]
 
     def _getFile(self) -> Path:
         return PathManagement.namelessCache() / f"precomputed_{self.identifier()}.tsv"
-
-    def free(self):
-        """Removes the cache file from disk."""
-        cache_path = self._getFile()
-        if cache_path.exists():
-            cache_path.unlink()
 
 
 HasSegmentation = TypeVar("HasSegmentation", bound=WordSegmentation)
@@ -75,6 +69,9 @@ class ModestDatasetPrecomputedWithLemma(_ModestDatasetPrecomputedBase[HasSegment
 
 
 class _PrecomputedReader(ModestReader[tuple[str,...],M], Generic[Nested,M]):
+    """
+    Precomputed segmentations are stored to a TSV file. Subclasses can still choose how to lay out that TSV file.
+    """
 
     def _generateRaw(self, path: Path) -> Iterator[tuple[str,...]]:
         yield from iterateTsv(path)
@@ -83,26 +80,28 @@ class _PrecomputedReader(ModestReader[tuple[str,...],M], Generic[Nested,M]):
         return TsvWriter()
 
     @abstractmethod
-    def _nestedObjectToRaw(self, from_nested_dataset: Nested) -> tuple[str, ...]:
+    def _serialiseNestedObject(self, from_nested_dataset: Nested) -> tuple[str, ...]:
         pass
 
+
+_TSV_NESTED_SEPARATOR = " "
 
 class _PrecomputedWithoutLemmaReader(_PrecomputedReader[HasSegmentation,TrivialSegmentation]):
 
     def _parseRaw(self, raw: tuple[str,...], id: int) -> TrivialSegmentation:
-        return TrivialSegmentation(id=id, word=raw[0], segmentation_tag=raw[1], sep=" ")
+        return TrivialSegmentation(id=id, word=raw[0], segmentation=raw[1].split(_TSV_NESTED_SEPARATOR))
 
-    def _nestedObjectToRaw(self, from_nested_dataset: HasSegmentation) -> tuple[str, ...]:
-        return (from_nested_dataset.word, " ".join(from_nested_dataset.segment()))
+    def _serialiseNestedObject(self, from_nested_dataset: HasSegmentation) -> tuple[str, ...]:
+        return (from_nested_dataset.word, _TSV_NESTED_SEPARATOR.join(from_nested_dataset.segment()))
 
 
 class _PrecomputedWithLemmaReader(_PrecomputedReader[HasSegmentationAndLemma,TrivialSegmentationWithLemma]):
 
     def _parseRaw(self, raw: tuple[str,...], id: int) -> TrivialSegmentationWithLemma:
-        return TrivialSegmentationWithLemma(id=id, lemma=raw[0], word=raw[1], segmentation_tag=raw[2], sep=" ")
+        return TrivialSegmentationWithLemma(id=id, lemma=raw[0], word=raw[1], segmentation=raw[2].split(_TSV_NESTED_SEPARATOR))
 
-    def _nestedObjectToRaw(self, from_nested_dataset: HasSegmentationAndLemma) -> tuple[str, ...]:
-        return (from_nested_dataset.lemma, from_nested_dataset.word, " ".join(from_nested_dataset.segment()))
+    def _serialiseNestedObject(self, from_nested_dataset: HasSegmentationAndLemma) -> tuple[str, ...]:
+        return (from_nested_dataset.lemma, from_nested_dataset.word, _TSV_NESTED_SEPARATOR.join(from_nested_dataset.segment()))
 
 
 ########################################################################################################################

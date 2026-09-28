@@ -1,4 +1,4 @@
-from ..algorithms.alignment import alignMorphemes_Viterbi
+from ..util.alignment import alignMorphemes_Viterbi
 from ..interfaces.morphologies import WordDecompositionWithLexicalForm, WordDecomposition
 
 

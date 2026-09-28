@@ -1,7 +1,6 @@
 """
 For downloading data from WebCelex.
 """
-import os
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +30,7 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
     def getCollectionName(self) -> str:
         return "CELEX"
 
-    def _readers(self) -> list[ModestReader[Any,CelexLemmaMorphology]]:
+    def _readers(self) -> list[ModestReader[tuple[str,str],CelexLemmaMorphology]]:
         return [_CelexReader(self._verbose, self._legacy)]
 
     def _files(self) -> list[Path]:
@@ -42,35 +41,10 @@ class CelexDataset(ModestDataset[CelexLemmaMorphology]):
         cache_path = self._getCachePath() / (f"{self.getLanguage().to_tag()}.struclab.tsv")
         if not cache_path.exists():
             if not _WEBCELEX_NEEDS_AUTHENTICATION:
-                # - Make browser
-                from selenium import webdriver
-                from webdriver_manager.chrome import ChromeDriverManager
-                from selenium.webdriver.chrome.options import Options
-                from selenium.webdriver.chrome.service import Service
-
-                # - Parse stuff in browser
-                from selenium.webdriver.common.by import By
-                from selenium.webdriver.support.wait import WebDriverWait
-                import time
-                import bs4
+                from ..util.web import getWebDriver, By, time, WebDriverWait, bs4
 
                 print("Simulating browser to download CELEX dataset (takes under 60 seconds)...")
-
-                # Make options (custom arguments)
-                chrome_options = Options()
-                chrome_options.headless = True
-                # chrome_options.add_experimental_option("detach", True)  # Add this if you want the browser to stay open after the experiment is done.
-
-                # Make service (mandatory arguments)
-                if os.name == "nt":
-                    driver_path = Path(ChromeDriverManager().install()).parent / "chromedriver.exe"  # To prevent "OSError: [WinError 193] %1 is not a valid Win32 application". https://stackoverflow.com/a/78797164/9352077
-                else:
-                    driver_path = Path(ChromeDriverManager().install())
-                service = Service(executable_path=driver_path.as_posix())
-
-                # Instantiate driver
-                driver = webdriver.Chrome(service=service, options=chrome_options)  # If you get a "ValueError: There is no such driver by url", you need to pip upgrade the webdriver_manager package.
-                driver.implicitly_wait(3)  # Waiting time in case an element isn't found (WebCelex is slow...).
+                driver = getWebDriver()
 
                 # Entry page to select language
                 try:

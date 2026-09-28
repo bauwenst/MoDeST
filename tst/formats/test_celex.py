@@ -2,7 +2,7 @@ from tktkt.util.printing import PrintTable
 
 from modest.formats.celex import CelexLemmaMorphology
 from modest.languages.dutch import Dutch_Celex
-from modest.algorithms.alignment import alignMorphemes_Greedy, alignMorphemes_Viterbi
+from modest.util.alignment import alignMorphemes_Greedy, alignMorphemes_Viterbi
 
 
 def test_parsing():
