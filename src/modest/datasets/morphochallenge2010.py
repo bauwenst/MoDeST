@@ -56,7 +56,7 @@ class _MorphoChallengeReader(ModestReader[str, MorphoChallenge2010Morphology]):
         self._verbose = verbose
         self._is_turkish = is_turkish
 
-    def _generateRaw(self, path: Path) -> Iterator[tuple[int,str]]:
+    def _generateRaw(self, path: Path) -> Iterator[str]:
         with open(path, "r", encoding="windows-1252") as handle:
             yield from iterateHandle(handle, verbose=self._verbose)
 

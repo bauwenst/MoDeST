@@ -10,6 +10,14 @@ from tqdm.auto import tqdm
 
 from tktkt.util.timing import *
 from tktkt.util.printing import *
+from tktkt.util.iterables import *
+
+
+def countLines(open_file_handle: TextIO):
+    open_file_handle.seek(0)
+    total_lines = count(open_file_handle)
+    open_file_handle.seek(0)
+    return total_lines
 
 
 def iterateHandle(open_file_handle: TextIO, verbose=False):
@@ -22,21 +30,14 @@ def iterateHandle(open_file_handle: TextIO, verbose=False):
     """
     open_file_handle.seek(0)
     if verbose:
-        # Count total lines
-        total_lines = 0
-        for _ in open_file_handle:
-            total_lines += 1
-        open_file_handle.seek(0)
-
-        # Now generate each line whilst updating a progress bar.
-        for line in tqdm(open_file_handle, total=total_lines, desc=Path(open_file_handle.name).name, smoothing=0.05):
+        for line in tqdm(open_file_handle, total=countLines(open_file_handle), desc=Path(open_file_handle.name).name, smoothing=0.05):
             yield line.rstrip()
     else:
         for line in open_file_handle:
             yield line.rstrip()
 
 
-def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, verbose=False) -> Iterable[tuple[str, ...]]:
+def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, ignore_prefix: str=None, ignore_preamble_prefix: str=None, verbose=False) -> Iterable[tuple[str, ...]]:
     """
     Iterating over the words file is slightly trickier than you think due to 2 technicalities that are easy to forget:
         - You must strip the newline at the end;
@@ -47,7 +48,17 @@ def iterateTsv(tsv_path: Path, sep="\t", n_parts: int=0, verbose=False) -> Itera
     Hence, we abstract it. The result is completely in TEXT form, even if the second part is a number.
     """
     with open(tsv_path, "r", encoding="utf-8") as handle:
+        in_preamble = bool(ignore_preamble_prefix)
         for stripped_line in iterateHandle(handle, verbose=verbose):
+            if in_preamble:
+                if stripped_line.startswith(ignore_preamble_prefix):
+                    continue
+                else:
+                    in_preamble = False
+
+            if ignore_prefix and stripped_line.startswith(ignore_prefix):
+                continue
+
             parts = stripped_line.split(sep=sep)
             if len(parts) >= n_parts:  # Enough parts to output something.
                 if n_parts == 1:
