@@ -28,10 +28,10 @@ class ModestDataset(ABC, Generic[M]):
         1. Knowing how to talk to the external source that carries the data (.files());
         2. Knowing which classes can parse those data (.readers()).
 
-    Additionally, because the only user-facing method that has nothing to do with metadata is .generate() and the
-    subclasses don't implement this, you have to communicate the type of the objects it generates via a generic type variable: when
-    you extend this abstract class, do it like `class ActualDataset(ModestDataset[TypeOfTheGeneratedObjects]): ...` with
-    square brackets inside the inheritance parentheses.
+    When you extend this abstract class, do it like `class ActualDataset(ModestDataset[TypeOfTheGeneratedObjects]): ...`
+    with square brackets inside the inheritance parentheses to communicate the type of the objects it generates.
+    (You can't do this in a signature because the only user-facing method that has nothing to do with metadata is .generate() and the
+    subclasses don't implement this.)
     """
 
     def __init__(self):  # It is very important that this constructor not have a language parameter. If it did, then dataset families which have extra arguments (e.g. to control verbosity) would have every one of their language datasets repeat those arguments in their constructor.
@@ -44,7 +44,7 @@ class ModestDataset(ABC, Generic[M]):
         pass
 
     @abstractmethod
-    def _readers(self) -> list[ModestReader[Any,M2]]:  # Usually M2 == M but not always.
+    def _readers(self) -> list[ModestReader[Any,M2]]:  # Usually M2 == M but not always. TODO: I have no idea why I wrote this or what it means
         pass
 
     @abstractmethod
@@ -96,6 +96,13 @@ class ModestDataset(ABC, Generic[M]):
     def card(self) -> DatasetCard:
         """A summary of the dataset."""
         return DatasetCard(name=self.getCollectionName(), language=self.getLanguage(), size=count(self.generate()))
+
+    def invalidate(self):
+        """
+        Removes the files written by this dataset so that next time it is iterated, the files are redownloaded.
+        """
+        for path in self._files():
+            path.unlink(missing_ok=True)
 
     def rerouted(self, paths: Union[Path,list[Path]]) -> Self:
         """
